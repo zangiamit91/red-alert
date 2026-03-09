@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מערכת התרעות בזמן אמת</title>
+  <title>מערכת אזעקות אישית</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -19,6 +19,10 @@
       --accent: #14b8a6;
       --danger: #ef4444;
       --ok: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
@@ -78,23 +82,41 @@
     #banner {
       display: none;
       margin: 16px;
-      padding: 16px;
+      padding: 12px 16px;
       border-radius: 14px;
       background: linear-gradient(120deg, #b91c1c, #7f1d1d);
-      font-size: 20px;
-      line-height: 1.5;
+      font-size: 18px;
+      line-height: 1.35;
       border: 1px solid #dc2626;
+      position: relative;
+    }
+
+    #closeBannerBtn {
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(0, 0, 0, 0.18);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
     }
 
     #layout {
       display: grid;
-      grid-template-columns: 1fr 360px;
+      grid-template-columns: 1fr minmax(340px, 420px);
       gap: 16px;
       padding: 16px;
+      align-items: start;
     }
 
     #map {
-      height: calc(100vh - 180px);
+      height: calc(100vh - 230px);
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid var(--border);
@@ -106,7 +128,25 @@
       border-radius: 16px;
       padding: 16px;
       overflow: auto;
-      max-height: calc(100vh - 180px);
+      max-height: calc(100vh - 230px);
+    }
+
+    .sidebar-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(17, 24, 39, 0.92);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #041312;
+      border: 0;
     }
 
     h2, h3 {
@@ -140,6 +180,46 @@
       gap: 8px;
     }
 
+    .upload-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .upload-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .upload-check input {
+      transform: scale(1.15);
+      accent-color: var(--accent);
+    }
+
+    .history-toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .history-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
     input, select {
       border-radius: 10px;
       border: 1px solid var(--border);
@@ -153,6 +233,12 @@
       color: var(--muted);
       font-size: 13px;
       margin-bottom: 8px;
+    }
+
+    #rulesList {
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 4px;
     }
 
     .rule-item {
@@ -194,6 +280,12 @@
       border-bottom: 1px solid var(--border);
     }
 
+    #history {
+      max-height: 280px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
     .area-chip {
       display: inline-block;
       margin: 4px;
@@ -208,9 +300,37 @@
       font-size: 13px;
     }
 
+    .history-meta {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
     @media (max-width: 1024px) {
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+
+      .topbar {
+        gap: 8px;
+      }
+
+      .title {
+        width: 100%;
+        margin-left: 0;
+        font-size: 20px;
+      }
+
       #layout {
         grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 12px;
       }
 
       #map,
@@ -220,7 +340,26 @@
       }
 
       #map {
-        min-height: 420px;
+        min-height: 360px;
+        order: 2;
+        height: auto;
+      }
+
+      #sidebar {
+        order: 1;
+        max-height: none;
+      }
+
+      .history-toolbar,
+      .history-grid,
+      .history-actions,
+      .control-row,
+      .upload-row {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        min-height: 44px;
       }
     }
   </style>
@@ -229,18 +368,26 @@
   <header>
     <div class="topbar">
       <button id="enableSoundBtn">הפעלת סאונד</button>
-      <button id="testAlertBtn" class="secondary">התראת בדיקה</button>
+      <button id="testAlertBtn" class="secondary">בדיקת כל הערים</button>
       <div id="status">מתחבר...</div>
-      <div class="title">התראות פיקוד העורף</div>
+      <div class="title">מערכת אזעקות אישית</div>
     </div>
   </header>
 
-  <div id="banner"></div>
+  <div id="banner">
+    <button id="closeBannerBtn" aria-label="סגור">×</button>
+    <div id="bannerContent"></div>
+  </div>
 
   <div id="layout">
     <div id="map"></div>
     <aside id="sidebar">
-      <section class="card">
+      <div class="sidebar-tabs">
+        <button id="showSettingsTabBtn" class="secondary tab-btn active">הגדרות</button>
+        <button id="showHistoryTabBtn" class="secondary tab-btn">היסטוריה</button>
+      </div>
+
+      <section id="settingsCard" class="card">
         <h3>הגדרות אזורים וסאונד</h3>
         <p class="hint">
           ניתן לבחור כמה ערים במקביל. המערכת תשמיע התראה רק אם יש התאמה לאחת הערים שהוגדרו.
@@ -253,24 +400,75 @@
         </div>
 
         <div class="control-group">
-          <label for="cityInput">עיר למעקב</label>
-          <input id="cityInput" type="text" placeholder="לדוגמה: תל אביב" />
+          <label for="cityInput">עיר / אזור למעקב</label>
+          <input id="cityInput" type="text" list="citySuggestions" placeholder="לדוגמה: תל אביב, ירושלים, אשדוד" />
+          <datalist id="citySuggestions"></datalist>
+          <div class="muted">טיפ: שם כללי כמו "תל אביב" יתפוס גם תתי-אזורים (למשל "תל אביב - מרכז העיר").</div>
         </div>
 
         <div class="control-group">
-          <label for="citySoundSelect">צליל לעיר</label>
+          <label for="cityQuickSelect">בחירה מהירה מהרשימה</label>
+          <div class="control-row">
+            <select id="cityQuickSelect"></select>
+            <button id="useQuickCityBtn" class="secondary">העבר לשדה</button>
+          </div>
+          <div class="control-row">
+            <button id="testSelectedCityBtn" class="secondary">בדיקת עיר נבחרת</button>
+            <button id="testAllTrackedBtn" class="secondary">בדיקת כל הערים (מהגדרות)</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="citySoundSelect">צליל לעיר / אזור</label>
           <div class="control-row">
             <select id="citySoundSelect"></select>
-            <button id="addRuleBtn">הוסף / עדכן</button>
+            <button id="addRuleBtn">+ הוסף עיר/אזור</button>
           </div>
+        </div>
+
+        <div class="control-group">
+          <label for="soundUploadInput">העלאת צליל חדש</label>
+          <div class="upload-row">
+            <input id="soundUploadInput" type="file" accept=".mp3,.wav,.aiff,.aif,.m4a,audio/*" />
+            <button id="uploadSoundBtn" class="secondary">העלה סאונד</button>
+          </div>
+          <label class="upload-check" for="setUploadedAsDefaultCheck">
+            <input id="setUploadedAsDefaultCheck" type="checkbox" />
+            קבע כברירת מחדל אחרי העלאה
+          </label>
         </div>
 
         <div id="settingsStatus"></div>
         <div id="rulesList"></div>
       </section>
 
-      <section class="card">
-        <h3>התרעות אחרונות</h3>
+      <section id="historyCard" class="card hidden">
+        <h3>היסטוריית אזעקות</h3>
+        <p class="hint">
+          מוצגות אזעקות בלבד. אפשר לסנן לפי שעות/ימים אחרונים או לפי טווח תאריכים מדויק.
+        </p>
+        <div class="history-toolbar">
+          <select id="historyPresetSelect">
+            <option value="6h">6 שעות אחרונות</option>
+            <option value="12h">12 שעות אחרונות</option>
+            <option value="24h" selected>24 שעות אחרונות</option>
+            <option value="3d">3 ימים אחרונים</option>
+            <option value="7d">7 ימים אחרונים</option>
+            <option value="custom">טווח תאריכים מותאם</option>
+          </select>
+          <button id="applyPresetBtn" class="secondary">החל טווח מהיר</button>
+        </div>
+        <div id="customRangeWrap" class="hidden">
+          <div class="history-grid">
+            <input id="historyFromInput" type="datetime-local" />
+            <input id="historyToInput" type="datetime-local" />
+          </div>
+          <div class="history-actions">
+            <button id="applyDateRangeBtn" class="secondary">סנן לפי תאריכים</button>
+            <button id="clearHistoryFilterBtn" class="secondary">איפוס מסננים</button>
+          </div>
+        </div>
+        <div id="historyMeta" class="history-meta"></div>
         <div id="history"></div>
       </section>
     </aside>
@@ -282,6 +480,8 @@
   <script>
     const statusEl = document.getElementById("status");
     const bannerEl = document.getElementById("banner");
+    const bannerContentEl = document.getElementById("bannerContent");
+    const closeBannerBtn = document.getElementById("closeBannerBtn");
     const historyEl = document.getElementById("history");
     const audioEl = document.getElementById("alarmAudio");
     const enableSoundBtn = document.getElementById("enableSoundBtn");
@@ -289,14 +489,45 @@
     const settingsStatusEl = document.getElementById("settingsStatus");
     const defaultSoundSelect = document.getElementById("defaultSoundSelect");
     const cityInput = document.getElementById("cityInput");
+    const citySuggestionsEl = document.getElementById("citySuggestions");
+    const cityQuickSelect = document.getElementById("cityQuickSelect");
+    const useQuickCityBtn = document.getElementById("useQuickCityBtn");
+    const testSelectedCityBtn = document.getElementById("testSelectedCityBtn");
+    const testAllTrackedBtn = document.getElementById("testAllTrackedBtn");
     const citySoundSelect = document.getElementById("citySoundSelect");
     const addRuleBtn = document.getElementById("addRuleBtn");
+    const soundUploadInput = document.getElementById("soundUploadInput");
+    const uploadSoundBtn = document.getElementById("uploadSoundBtn");
+    const setUploadedAsDefaultCheck = document.getElementById("setUploadedAsDefaultCheck");
     const rulesList = document.getElementById("rulesList");
+    const historyPresetSelect = document.getElementById("historyPresetSelect");
+    const applyPresetBtn = document.getElementById("applyPresetBtn");
+    const customRangeWrap = document.getElementById("customRangeWrap");
+    const historyFromInput = document.getElementById("historyFromInput");
+    const historyToInput = document.getElementById("historyToInput");
+    const applyDateRangeBtn = document.getElementById("applyDateRangeBtn");
+    const clearHistoryFilterBtn = document.getElementById("clearHistoryFilterBtn");
+    const historyMetaEl = document.getElementById("historyMeta");
+    const showSettingsTabBtn = document.getElementById("showSettingsTabBtn");
+    const showHistoryTabBtn = document.getElementById("showHistoryTabBtn");
+    const settingsCard = document.getElementById("settingsCard");
+    const historyCard = document.getElementById("historyCard");
 
     let soundEnabled = false;
     let markers = [];
     let knownAlertIds = new Set();
     let sounds = [];
+    let historyItems = [];
+    let bannerAutoHideTimer = null;
+    let dynamicAreaSuggestions = new Set();
+    let activeHistoryFilter = {
+      mode: "preset",
+      preset: "24h",
+      lastHours: 24,
+      lastDays: null,
+      fromIso: "",
+      toIso: "",
+    };
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
@@ -309,14 +540,65 @@
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
-    // דוגמה התחלתית. בפרודקשן תבנה JSON מלא של יישוב -> קואורדינטות
+    function refreshMapLayout() {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 120);
+    }
+
+    const KNOWN_CITY_SUGGESTIONS = [
+      "תל אביב",
+      "תל אביב - יפו",
+      "תל אביב - מרכז העיר",
+      "ירושלים",
+      "חיפה",
+      "באר שבע",
+      "אשדוד",
+      "אשקלון",
+      "פתח תקווה",
+      "ראשון לציון",
+      "נתניה",
+      "בני ברק",
+      "חולון",
+      "בת ים",
+      "רמת גן",
+      "גבעתיים",
+      "הרצליה",
+      "רעננה",
+      "כפר סבא",
+      "מודיעין",
+      "רחובות",
+      "לוד",
+      "רמלה",
+      "חדרה",
+      "עומר",
+    ];
+
     const cityCoords = {
+      "תל אביב": [32.0853, 34.7818],
+      "תל אביב - יפו": [32.065, 34.7642],
       "באר שבע": [31.2520, 34.7915],
       "תל אביב - מרכז העיר": [32.0853, 34.7818],
       "ירושלים": [31.7683, 35.2137],
       "חיפה": [32.7940, 34.9896],
       "אשדוד": [31.8014, 34.6435],
       "אשקלון": [31.6688, 34.5743],
+      "פתח תקווה": [32.084, 34.8878],
+      "ראשון לציון": [31.9642, 34.8044],
+      "בת ים": [32.0238, 34.7519],
+      "חולון": [32.0158, 34.7874],
+      "בני ברק": [32.0807, 34.8338],
+      "רמת גן": [32.0684, 34.8248],
+      "גבעתיים": [32.0723, 34.8113],
+      "הרצליה": [32.1656, 34.8444],
+      "רעננה": [32.1848, 34.8713],
+      "כפר סבא": [32.175, 34.9079],
+      "מודיעין": [31.8996, 35.0104],
+      "רחובות": [31.8948, 34.8093],
+      "לוד": [31.9522, 34.8953],
+      "רמלה": [31.9316, 34.8729],
+      "נתניה": [32.3215, 34.8532],
+      "חדרה": [32.4392, 34.9197],
       "עומר": [31.2642, 34.8472],
     };
 
@@ -324,19 +606,216 @@
       return String(value || "").trim().toLowerCase();
     }
 
+    function areaMatches(areaName, trackedName) {
+      const area = normalizeText(areaName);
+      const tracked = normalizeText(trackedName);
+      if (!area || !tracked) return false;
+      return area === tracked || area.includes(tracked) || tracked.includes(area);
+    }
+
     function setStatus(text, color = "var(--muted)") {
       settingsStatusEl.textContent = text;
       settingsStatusEl.style.color = color;
+    }
+
+    function toLocalDateTimeInputValue(dateObj) {
+      const pad = (num) => String(num).padStart(2, "0");
+      const year = dateObj.getFullYear();
+      const month = pad(dateObj.getMonth() + 1);
+      const day = pad(dateObj.getDate());
+      const hours = pad(dateObj.getHours());
+      const minutes = pad(dateObj.getMinutes());
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    function applyPresetToDateInputs(presetValue) {
+      if (presetValue === "custom") return;
+
+      const now = new Date();
+      let fromDate = null;
+
+      if (presetValue.endsWith("h")) {
+        const hours = Number(presetValue.replace("h", ""));
+        if (Number.isFinite(hours) && hours > 0) {
+          fromDate = new Date(now.getTime() - hours * 60 * 60 * 1000);
+        }
+      } else if (presetValue.endsWith("d")) {
+        const days = Number(presetValue.replace("d", ""));
+        if (Number.isFinite(days) && days > 0) {
+          fromDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      if (fromDate) {
+        historyFromInput.value = toLocalDateTimeInputValue(fromDate);
+      }
+      historyToInput.value = toLocalDateTimeInputValue(now);
+    }
+
+    function syncHistoryCustomVisibility() {
+      customRangeWrap.classList.toggle(
+        "hidden",
+        historyPresetSelect.value !== "custom"
+      );
+    }
+
+    function setSidebarTab(tabName) {
+      const showSettings = tabName === "settings";
+
+      settingsCard.classList.toggle("hidden", !showSettings);
+      historyCard.classList.toggle("hidden", showSettings);
+
+      showSettingsTabBtn.classList.toggle("active", showSettings);
+      showHistoryTabBtn.classList.toggle("active", !showSettings);
+      refreshMapLayout();
+    }
+
+    function buildHistoryQueryParams() {
+      const params = new URLSearchParams();
+      params.set("onlySirens", "true");
+      params.set("limit", "500");
+
+      if (activeHistoryFilter.mode === "preset") {
+        if (activeHistoryFilter.lastHours) {
+          params.set("lastHours", String(activeHistoryFilter.lastHours));
+        }
+        if (activeHistoryFilter.lastDays) {
+          params.set("lastDays", String(activeHistoryFilter.lastDays));
+        }
+      } else {
+        if (activeHistoryFilter.fromIso) {
+          params.set("from", activeHistoryFilter.fromIso);
+        }
+        if (activeHistoryFilter.toIso) {
+          params.set("to", activeHistoryFilter.toIso);
+        }
+      }
+
+      return params;
     }
 
     function encodeFilePath(fileName) {
       return `/${encodeURIComponent(fileName)}`;
     }
 
+    function resolveMappedSoundForAreas(areas) {
+      if (!Array.isArray(areas) || areas.length === 0) {
+        return settings.defaultSound || "";
+      }
+
+      const mapEntries = Object.entries(settings.areaSoundMap || {});
+
+      for (const area of areas) {
+        const areaNorm = normalizeText(area);
+        for (const [city, sound] of mapEntries) {
+          if (!sounds.includes(sound)) continue;
+          if (areaNorm && areaNorm === normalizeText(city)) {
+            return sound;
+          }
+        }
+      }
+
+      for (const area of areas) {
+        for (const [city, sound] of mapEntries) {
+          if (!sounds.includes(sound)) continue;
+          if (areaMatches(area, city)) {
+            return sound;
+          }
+        }
+      }
+
+      return settings.defaultSound || "";
+    }
+
+    async function playSoundNow(soundFile) {
+      if (!soundFile) return;
+      try {
+        audioEl.src = encodeFilePath(soundFile);
+        audioEl.volume = 1;
+        audioEl.muted = false;
+        audioEl.currentTime = 0;
+        await audioEl.play();
+        soundEnabled = true;
+        enableSoundBtn.textContent = "סאונד פעיל";
+      } catch (error) {
+        console.error("manual sound failed", error);
+        setStatus("הדפדפן חסם סאונד. לחץ 'הפעלת סאונד' ואז נסה שוב", "var(--danger)");
+      }
+    }
+
+    async function sendTestAlertForAreas(areas) {
+      const testAreas = Array.isArray(areas)
+        ? areas.map((a) => String(a || "").trim()).filter(Boolean)
+        : [];
+
+      const immediateSound = resolveMappedSoundForAreas(testAreas);
+      const previewPromise = playSoundNow(immediateSound);
+
+      const payload = await fetchJSON("/api/test-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ areas: testAreas }),
+      });
+
+      const targetAreas =
+        Array.isArray(payload?.matchedAreas) && payload.matchedAreas.length > 0
+          ? payload.matchedAreas
+          : testAreas;
+
+      const soundFile =
+        typeof payload?.soundFile === "string" && payload.soundFile
+          ? payload.soundFile
+          : resolveMappedSoundForAreas(targetAreas);
+
+      await previewPromise;
+      if (!immediateSound && soundFile) {
+        await playSoundNow(soundFile);
+      }
+      return payload;
+    }
+
     function findTrackedCityName(cityName) {
       return settings.trackedAreas.find(
         (area) => normalizeText(area) === normalizeText(cityName)
       );
+    }
+
+    function refreshCitySuggestions() {
+      const merged = new Map();
+
+      [
+        ...KNOWN_CITY_SUGGESTIONS,
+        ...Object.keys(cityCoords),
+        ...settings.trackedAreas,
+        ...Array.from(dynamicAreaSuggestions),
+      ].forEach((name) => {
+        const clean = String(name ?? "").trim();
+        if (!clean) return;
+        merged.set(normalizeText(clean), clean);
+      });
+
+      const sorted = Array.from(merged.values()).sort((a, b) =>
+        a.localeCompare(b, "he")
+      );
+
+      citySuggestionsEl.innerHTML = "";
+      cityQuickSelect.innerHTML = "";
+
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = "בחר עיר/אזור מהרשימה";
+      cityQuickSelect.appendChild(emptyOption);
+
+      sorted.forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        citySuggestionsEl.appendChild(option);
+
+        const quickOption = document.createElement("option");
+        quickOption.value = name;
+        quickOption.textContent = name;
+        cityQuickSelect.appendChild(quickOption);
+      });
     }
 
     function getCityMappedSound(cityName) {
@@ -451,6 +930,7 @@
       fillSoundSelect(defaultSoundSelect, settings.defaultSound, false);
       fillSoundSelect(citySoundSelect, "", true);
       renderRulesList();
+      refreshCitySuggestions();
     }
 
     async function fetchJSON(url, options) {
@@ -459,6 +939,45 @@
         throw new Error(`Request failed: ${res.status}`);
       }
       return res.json();
+    }
+
+    async function uploadCustomSound() {
+      const file = soundUploadInput.files?.[0];
+      if (!file) {
+        setStatus("בחר קובץ סאונד לפני העלאה", "var(--danger)");
+        return;
+      }
+
+      const form = new FormData();
+      form.append("soundFile", file);
+      form.append(
+        "setAsDefault",
+        setUploadedAsDefaultCheck.checked ? "true" : "false"
+      );
+
+      setStatus("מעלה קובץ סאונד...");
+
+      const res = await fetch("/api/sounds/upload", {
+        method: "POST",
+        body: form,
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message =
+          typeof payload?.message === "string"
+            ? payload.message
+            : "העלאת קובץ נכשלה";
+        throw new Error(message);
+      }
+
+      sounds = Array.isArray(payload.sounds) ? payload.sounds : sounds;
+      settings = payload.settings || settings;
+      renderSettings();
+
+      soundUploadInput.value = "";
+      setUploadedAsDefaultCheck.checked = false;
+      setStatus("הסאונד עלה בהצלחה", "var(--ok)");
     }
 
     async function refreshConfig() {
@@ -505,6 +1024,166 @@
       setCityMappedSound(cityName, citySoundSelect.value);
       cityInput.value = "";
       await saveSettings();
+      setStatus(
+        existingName
+          ? "העיר כבר הייתה קיימת, הצליל עודכן"
+          : "העיר/האזור נוספו בהצלחה",
+        "var(--ok)"
+      );
+    });
+
+    cityInput.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      addRuleBtn.click();
+    });
+
+    useQuickCityBtn.addEventListener("click", () => {
+      const selected = cityQuickSelect.value;
+      if (!selected) {
+        setStatus("בחר עיר מהרשימה כדי להעביר לשדה", "var(--muted)");
+        return;
+      }
+      cityInput.value = selected;
+      cityInput.focus();
+      setStatus(`נבחרה עיר: ${selected}`, "var(--ok)");
+    });
+
+    testSelectedCityBtn.addEventListener("click", async () => {
+      const selectedArea = cityQuickSelect.value || cityInput.value.trim();
+      if (!selectedArea) {
+        setStatus("בחר עיר לבדיקה מהרשימה או מהשדה", "var(--danger)");
+        return;
+      }
+
+      try {
+        await sendTestAlertForAreas([selectedArea]);
+        setStatus(`נשלחה בדיקה לעיר: ${selectedArea}`, "var(--ok)");
+      } catch (error) {
+        setStatus("שליחת בדיקה נכשלה", "var(--danger)");
+        console.error(error);
+      }
+    });
+
+    testAllTrackedBtn.addEventListener("click", async () => {
+      const areas = settings.trackedAreas.length > 0 ? settings.trackedAreas : ["תל אביב"];
+
+      try {
+        await sendTestAlertForAreas(areas);
+        setStatus(`נשלחה בדיקה ל-${areas.length} ערים`, "var(--ok)");
+      } catch (error) {
+        setStatus("שליחת בדיקה נכשלה", "var(--danger)");
+        console.error(error);
+      }
+    });
+
+    uploadSoundBtn.addEventListener("click", async () => {
+      try {
+        await uploadCustomSound();
+      } catch (error) {
+        setStatus(error.message || "שגיאה בהעלאת קובץ", "var(--danger)");
+      }
+    });
+
+    historyPresetSelect.addEventListener("change", () => {
+      syncHistoryCustomVisibility();
+      if (historyPresetSelect.value !== "custom") {
+        applyPresetToDateInputs(historyPresetSelect.value);
+      }
+    });
+
+    closeBannerBtn.addEventListener("click", () => {
+      bannerEl.style.display = "none";
+      if (bannerAutoHideTimer) {
+        clearTimeout(bannerAutoHideTimer);
+      }
+    });
+
+    showSettingsTabBtn.addEventListener("click", () => {
+      setSidebarTab("settings");
+    });
+
+    showHistoryTabBtn.addEventListener("click", () => {
+      setSidebarTab("history");
+    });
+
+    window.addEventListener("resize", () => {
+      refreshMapLayout();
+    });
+
+    applyPresetBtn.addEventListener("click", async () => {
+      setSidebarTab("history");
+      const presetValue = historyPresetSelect.value;
+      if (presetValue === "custom") {
+        setStatus("בחר טווח תאריכים מותאם ולחץ סינון", "var(--muted)");
+        return;
+      }
+
+      activeHistoryFilter = {
+        mode: "preset",
+        preset: presetValue,
+        lastHours: presetValue.endsWith("h")
+          ? Number(presetValue.replace("h", ""))
+          : null,
+        lastDays: presetValue.endsWith("d")
+          ? Number(presetValue.replace("d", ""))
+          : null,
+        fromIso: "",
+        toIso: "",
+      };
+
+      await loadHistory();
+    });
+
+    applyDateRangeBtn.addEventListener("click", async () => {
+      setSidebarTab("history");
+      const fromValue = historyFromInput.value;
+      const toValue = historyToInput.value;
+
+      if (!fromValue && !toValue) {
+        setStatus("בחר לפחות תאריך אחד לסינון", "var(--danger)");
+        return;
+      }
+
+      const fromIso = fromValue ? new Date(fromValue).toISOString() : "";
+      const toIso = toValue ? new Date(toValue).toISOString() : "";
+
+      if (fromIso && toIso && new Date(fromIso) > new Date(toIso)) {
+        setStatus("תאריך התחלה חייב להיות לפני תאריך הסיום", "var(--danger)");
+        return;
+      }
+
+      historyPresetSelect.value = "custom";
+      syncHistoryCustomVisibility();
+
+      activeHistoryFilter = {
+        mode: "custom",
+        preset: "custom",
+        lastHours: null,
+        lastDays: null,
+        fromIso,
+        toIso,
+      };
+
+      await loadHistory();
+    });
+
+    clearHistoryFilterBtn.addEventListener("click", async () => {
+      setSidebarTab("history");
+      historyPresetSelect.value = "24h";
+      syncHistoryCustomVisibility();
+      applyPresetToDateInputs("24h");
+
+      activeHistoryFilter = {
+        mode: "preset",
+        preset: "24h",
+        lastHours: 24,
+        lastDays: null,
+        fromIso: "",
+        toIso: "",
+      };
+
+      await loadHistory();
     });
 
     enableSoundBtn.addEventListener("click", async () => {
@@ -524,15 +1203,15 @@
     });
 
     testAlertBtn.addEventListener("click", async () => {
-      const preferredArea = cityInput.value.trim() || settings.trackedAreas[0] || "תל אביב";
+      const testAreas =
+        settings.trackedAreas.length > 0 ? settings.trackedAreas : ["תל אביב"];
 
       try {
-        await fetchJSON("/api/test-alert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ areas: [preferredArea] }),
-        });
-        setStatus("נשלחה התראת בדיקה", "var(--ok)");
+        await sendTestAlertForAreas(testAreas);
+        setStatus(
+          `נשלחה בדיקה ל-${testAreas.length} ערים`,
+          "var(--ok)"
+        );
       } catch (err) {
         setStatus("שליחת בדיקה נכשלה", "var(--danger)");
         console.error(err);
@@ -583,28 +1262,81 @@
 
     function renderBanner(alert, areas) {
       bannerEl.style.display = "block";
-      bannerEl.innerHTML = `
+      bannerContentEl.innerHTML = `
         <strong>${alert.title}</strong><br>
         ${areas.join(", ")}<br>
         <small>${new Date(alert.receivedAt).toLocaleString("he-IL")}</small>
       `;
+
+      if (bannerAutoHideTimer) {
+        clearTimeout(bannerAutoHideTimer);
+      }
+      bannerAutoHideTimer = setTimeout(() => {
+        bannerEl.style.display = "none";
+      }, 20000);
     }
 
-    function prependHistory(alert, areas) {
-      const div = document.createElement("div");
-      div.className = "alert-item";
-      div.innerHTML = `
-        <div><strong>${alert.title}</strong></div>
-        <div>${areas.map(a => `<span class="area-chip">${a}</span>`).join("")}</div>
-        <div style="margin-top:8px;opacity:.8">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
-      `;
-      historyEl.prepend(div);
+    function getHistoryAreas(alert) {
+      if (Array.isArray(alert.matchedAreas) && alert.matchedAreas.length > 0) {
+        return alert.matchedAreas;
+      }
+      return Array.isArray(alert.areas) ? alert.areas : [];
+    }
+
+    function renderHistoryList() {
+      historyEl.innerHTML = "";
+
+      if (!historyItems.length) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = "לא נמצאו אזעקות בטווח שנבחר.";
+        historyEl.appendChild(empty);
+        historyMetaEl.textContent = "0 תוצאות";
+        return;
+      }
+
+      historyMetaEl.textContent = `${historyItems.length} אזעקות בטווח`;
+
+      historyItems.forEach((alert) => {
+        const areas = getHistoryAreas(alert);
+        const div = document.createElement("div");
+        div.className = "alert-item";
+        div.innerHTML = `
+          <div><strong>${alert.title}</strong></div>
+          <div>${areas.map(a => `<span class="area-chip">${a}</span>`).join("")}</div>
+          <div style="margin-top:8px;opacity:.8">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
+        `;
+        historyEl.appendChild(div);
+      });
+    }
+
+    async function loadHistory() {
+      const params = buildHistoryQueryParams();
+      const data = await fetchJSON(`/api/history?${params.toString()}`);
+      historyItems = Array.isArray(data) ? data : [];
+
+      historyItems.forEach((item) => {
+        getHistoryAreas(item).forEach((area) => {
+          dynamicAreaSuggestions.add(area);
+        });
+      });
+
+      knownAlertIds = new Set(
+        historyItems
+          .map((item) => String(item?.id ?? "").trim())
+          .filter(Boolean)
+      );
+
+      renderHistoryList();
+      refreshCitySuggestions();
     }
 
     async function tryPlaySound(soundFile) {
       if (!soundEnabled || !soundFile) return;
       try {
         audioEl.src = encodeFilePath(soundFile);
+        audioEl.volume = 1;
+        audioEl.muted = false;
         audioEl.currentTime = 0;
         await audioEl.play();
       } catch (e) {
@@ -622,22 +1354,10 @@
       if (!areas.length) return;
 
       renderBanner(alert, areas);
-      prependHistory(alert, areas);
       plotAreas(areas);
-      tryPlaySound(alert.soundFile);
-    }
 
-    async function loadInitialHistory() {
-      try {
-        const alerts = await fetchJSON("/api/history");
-        if (Array.isArray(alerts)) {
-          alerts
-            .slice()
-            .reverse()
-            .forEach((alert) => handleAlert(alert));
-        }
-      } catch (err) {
-        console.error("history failed", err);
+      if (!alert.isTest) {
+        tryPlaySound(alert.soundFile);
       }
     }
 
@@ -681,14 +1401,19 @@
 
         if (msg.type === "alert") {
           handleAlert(msg.payload);
+          loadHistory().catch((err) => console.error("history refresh failed", err));
         }
       };
     }
 
     async function bootstrap() {
       try {
+        setSidebarTab("settings");
         await refreshConfig();
-        await loadInitialHistory();
+        syncHistoryCustomVisibility();
+        applyPresetToDateInputs("24h");
+        await loadHistory();
+        refreshMapLayout();
         setStatus("אפשר להתחיל להגדיר ערים וסאונד");
       } catch (err) {
         setStatus("שגיאה בטעינת ההגדרות", "var(--danger)");
