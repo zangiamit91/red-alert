@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: red-alert
+    env: node
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: SERVER_AUDIO_ENABLED
+        value: "false"

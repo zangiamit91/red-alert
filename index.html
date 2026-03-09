@@ -3,23 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מערכת התרעות</title>
+  <title>מערכת התרעות בזמן אמת</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #111827;
+      --surface-soft: #1f2937;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #14b8a6;
+      --danger: #ef4444;
+      --ok: #22c55e;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #10131a;
-      color: white;
+      font-family: "Assistant", "Segoe UI", Tahoma, sans-serif;
+      background: radial-gradient(circle at top right, #1e293b 0%, var(--bg) 55%);
+      color: var(--text);
     }
 
     header {
-      padding: 16px;
-      background: #181d27;
-      border-bottom: 1px solid #2b3342;
+      padding: 16px 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(4px);
     }
 
     .topbar {
@@ -29,15 +42,37 @@
       flex-wrap: wrap;
     }
 
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-left: auto;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
     button {
       padding: 10px 14px;
       border: 0;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
+      color: #041312;
+      background: var(--accent);
+      font-weight: 600;
+    }
+
+    button.secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
 
     #status {
       opacity: 0.9;
+      color: var(--muted);
     }
 
     #banner {
@@ -45,9 +80,10 @@
       margin: 16px;
       padding: 16px;
       border-radius: 14px;
-      background: #b91c1c;
+      background: linear-gradient(120deg, #b91c1c, #7f1d1d);
       font-size: 20px;
       line-height: 1.5;
+      border: 1px solid #dc2626;
     }
 
     #layout {
@@ -61,20 +97,101 @@
       height: calc(100vh - 180px);
       border-radius: 16px;
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
     #sidebar {
-      background: #181d27;
-      border: 1px solid #2b3342;
+      background: rgba(17, 24, 39, 0.86);
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
       overflow: auto;
       max-height: calc(100vh - 180px);
     }
 
+    h2, h3 {
+      margin-top: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .hint {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    input, select {
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      padding: 10px;
+    }
+
+    #settingsStatus {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .rule-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #0b1220;
+    }
+
+    .rule-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .rule-city {
+      font-weight: 700;
+    }
+
+    .danger {
+      background: var(--danger);
+      color: white;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    .rule-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
     .alert-item {
       padding: 12px;
-      border-bottom: 1px solid #2b3342;
+      border-bottom: 1px solid var(--border);
     }
 
     .area-chip {
@@ -85,13 +202,36 @@
       background: #243045;
       font-size: 14px;
     }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1024px) {
+      #layout {
+        grid-template-columns: 1fr;
+      }
+
+      #map,
+      #sidebar {
+        max-height: none;
+        height: auto;
+      }
+
+      #map {
+        min-height: 420px;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="topbar">
       <button id="enableSoundBtn">הפעלת סאונד</button>
+      <button id="testAlertBtn" class="secondary">התראת בדיקה</button>
       <div id="status">מתחבר...</div>
+      <div class="title">התראות פיקוד העורף</div>
     </div>
   </header>
 
@@ -100,14 +240,43 @@
   <div id="layout">
     <div id="map"></div>
     <aside id="sidebar">
-      <h2>התרעות אחרונות</h2>
-      <div id="history"></div>
+      <section class="card">
+        <h3>הגדרות אזורים וסאונד</h3>
+        <p class="hint">
+          ניתן לבחור כמה ערים במקביל. המערכת תשמיע התראה רק אם יש התאמה לאחת הערים שהוגדרו.
+          לכל עיר אפשר להגדיר צליל ייחודי.
+        </p>
+
+        <div class="control-group">
+          <label for="defaultSoundSelect">צליל ברירת מחדל</label>
+          <select id="defaultSoundSelect"></select>
+        </div>
+
+        <div class="control-group">
+          <label for="cityInput">עיר למעקב</label>
+          <input id="cityInput" type="text" placeholder="לדוגמה: תל אביב" />
+        </div>
+
+        <div class="control-group">
+          <label for="citySoundSelect">צליל לעיר</label>
+          <div class="control-row">
+            <select id="citySoundSelect"></select>
+            <button id="addRuleBtn">הוסף / עדכן</button>
+          </div>
+        </div>
+
+        <div id="settingsStatus"></div>
+        <div id="rulesList"></div>
+      </section>
+
+      <section class="card">
+        <h3>התרעות אחרונות</h3>
+        <div id="history"></div>
+      </section>
     </aside>
   </div>
 
-  <audio id="alarmAudio" preload="auto">
-    <source src="./alert.mp3" type="audio/mpeg" />
-  </audio>
+  <audio id="alarmAudio" preload="auto"></audio>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -116,22 +285,23 @@
     const historyEl = document.getElementById("history");
     const audioEl = document.getElementById("alarmAudio");
     const enableSoundBtn = document.getElementById("enableSoundBtn");
+    const testAlertBtn = document.getElementById("testAlertBtn");
+    const settingsStatusEl = document.getElementById("settingsStatus");
+    const defaultSoundSelect = document.getElementById("defaultSoundSelect");
+    const cityInput = document.getElementById("cityInput");
+    const citySoundSelect = document.getElementById("citySoundSelect");
+    const addRuleBtn = document.getElementById("addRuleBtn");
+    const rulesList = document.getElementById("rulesList");
 
     let soundEnabled = false;
     let markers = [];
-
-    enableSoundBtn.addEventListener("click", async () => {
-      try {
-        audioEl.volume = 1;
-        await audioEl.play();
-        audioEl.pause();
-        audioEl.currentTime = 0;
-        soundEnabled = true;
-        enableSoundBtn.textContent = "סאונד פעיל";
-      } catch (e) {
-        console.error(e);
-      }
-    });
+    let knownAlertIds = new Set();
+    let sounds = [];
+    let settings = {
+      trackedAreas: [],
+      areaSoundMap: {},
+      defaultSound: "",
+    };
 
     const map = L.map("map").setView([31.7683, 35.2137], 7);
 
@@ -150,9 +320,238 @@
       "עומר": [31.2642, 34.8472],
     };
 
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function setStatus(text, color = "var(--muted)") {
+      settingsStatusEl.textContent = text;
+      settingsStatusEl.style.color = color;
+    }
+
+    function encodeFilePath(fileName) {
+      return `/${encodeURIComponent(fileName)}`;
+    }
+
+    function findTrackedCityName(cityName) {
+      return settings.trackedAreas.find(
+        (area) => normalizeText(area) === normalizeText(cityName)
+      );
+    }
+
+    function getCityMappedSound(cityName) {
+      for (const [mappedCity, soundName] of Object.entries(settings.areaSoundMap || {})) {
+        if (normalizeText(mappedCity) === normalizeText(cityName)) {
+          return soundName;
+        }
+      }
+      return "";
+    }
+
+    function setCityMappedSound(cityName, soundName) {
+      for (const existingKey of Object.keys(settings.areaSoundMap || {})) {
+        if (normalizeText(existingKey) === normalizeText(cityName)) {
+          delete settings.areaSoundMap[existingKey];
+        }
+      }
+
+      if (soundName) {
+        settings.areaSoundMap[cityName] = soundName;
+      }
+    }
+
+    function removeCityFromSettings(cityName) {
+      settings.trackedAreas = settings.trackedAreas.filter(
+        (area) => normalizeText(area) !== normalizeText(cityName)
+      );
+
+      for (const existingKey of Object.keys(settings.areaSoundMap || {})) {
+        if (normalizeText(existingKey) === normalizeText(cityName)) {
+          delete settings.areaSoundMap[existingKey];
+        }
+      }
+    }
+
+    function fillSoundSelect(selectEl, selected, includeDefaultOption = false) {
+      selectEl.innerHTML = "";
+
+      if (includeDefaultOption) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "ברירת מחדל";
+        selectEl.appendChild(opt);
+      }
+
+      sounds.forEach((soundName) => {
+        const opt = document.createElement("option");
+        opt.value = soundName;
+        opt.textContent = soundName;
+        if (soundName === selected) {
+          opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+      });
+
+      if (!selected && selectEl.options.length > 0) {
+        selectEl.selectedIndex = 0;
+      }
+    }
+
+    function renderRulesList() {
+      rulesList.innerHTML = "";
+
+      if (!settings.trackedAreas.length) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = "כרגע אין ערים מוגדרות. במצב זה מתקבלות כל ההתראות.";
+        rulesList.appendChild(empty);
+        return;
+      }
+
+      settings.trackedAreas.forEach((cityName) => {
+        const row = document.createElement("div");
+        row.className = "rule-item";
+
+        const header = document.createElement("div");
+        header.className = "rule-header";
+
+        const city = document.createElement("div");
+        city.className = "rule-city";
+        city.textContent = cityName;
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "danger";
+        removeBtn.textContent = "הסר";
+        removeBtn.addEventListener("click", async () => {
+          removeCityFromSettings(cityName);
+          await saveSettings();
+        });
+
+        header.appendChild(city);
+        header.appendChild(removeBtn);
+
+        const actions = document.createElement("div");
+        actions.className = "rule-actions";
+
+        const select = document.createElement("select");
+        fillSoundSelect(select, getCityMappedSound(cityName), true);
+        select.addEventListener("change", async () => {
+          setCityMappedSound(cityName, select.value);
+          await saveSettings();
+        });
+        actions.appendChild(select);
+
+        row.appendChild(header);
+        row.appendChild(actions);
+        rulesList.appendChild(row);
+      });
+    }
+
+    function renderSettings() {
+      fillSoundSelect(defaultSoundSelect, settings.defaultSound, false);
+      fillSoundSelect(citySoundSelect, "", true);
+      renderRulesList();
+    }
+
+    async function fetchJSON(url, options) {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+      return res.json();
+    }
+
+    async function refreshConfig() {
+      const [soundsResp, settingsResp] = await Promise.all([
+        fetchJSON("/api/sounds"),
+        fetchJSON("/api/settings"),
+      ]);
+
+      sounds = Array.isArray(soundsResp) ? soundsResp : [];
+      settings = settingsResp || settings;
+      renderSettings();
+    }
+
+    async function saveSettings() {
+      setStatus("שומר הגדרות...");
+      settings = await fetchJSON("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      renderSettings();
+      setStatus("ההגדרות נשמרו", "var(--ok)");
+    }
+
+    defaultSoundSelect.addEventListener("change", async () => {
+      settings.defaultSound = defaultSoundSelect.value;
+      await saveSettings();
+    });
+
+    addRuleBtn.addEventListener("click", async () => {
+      const rawCity = cityInput.value.trim();
+      if (!rawCity) {
+        setStatus("צריך להזין שם עיר", "var(--danger)");
+        return;
+      }
+
+      const existingName = findTrackedCityName(rawCity);
+      const cityName = existingName || rawCity;
+
+      if (!existingName) {
+        settings.trackedAreas.push(cityName);
+      }
+
+      setCityMappedSound(cityName, citySoundSelect.value);
+      cityInput.value = "";
+      await saveSettings();
+    });
+
+    enableSoundBtn.addEventListener("click", async () => {
+      try {
+        if (settings.defaultSound) {
+          audioEl.src = encodeFilePath(settings.defaultSound);
+          audioEl.volume = 1;
+          await audioEl.play();
+          audioEl.pause();
+          audioEl.currentTime = 0;
+        }
+        soundEnabled = true;
+        enableSoundBtn.textContent = "סאונד פעיל";
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    testAlertBtn.addEventListener("click", async () => {
+      const preferredArea = cityInput.value.trim() || settings.trackedAreas[0] || "תל אביב";
+
+      try {
+        await fetchJSON("/api/test-alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ areas: [preferredArea] }),
+        });
+        setStatus("נשלחה התראת בדיקה", "var(--ok)");
+      } catch (err) {
+        setStatus("שליחת בדיקה נכשלה", "var(--danger)");
+        console.error(err);
+      }
+    });
+
     function clearMarkers() {
       markers.forEach((m) => map.removeLayer(m));
       markers = [];
+    }
+
+    function resolveCoords(areaName) {
+      if (cityCoords[areaName]) return cityCoords[areaName];
+
+      const key = Object.keys(cityCoords).find(
+        (city) => areaName.includes(city) || city.includes(areaName)
+      );
+
+      return key ? cityCoords[key] : null;
     }
 
     function plotAreas(areas) {
@@ -160,7 +559,7 @@
 
       const points = [];
       areas.forEach((area) => {
-        const coords = cityCoords[area];
+        const coords = resolveCoords(area);
         if (!coords) return;
 
         const marker = L.marker(coords).addTo(map).bindPopup(area);
@@ -175,29 +574,37 @@
       }
     }
 
-    function renderBanner(alert) {
+    function getDisplayAreas(alert) {
+      if (Array.isArray(alert.matchedAreas) && alert.matchedAreas.length > 0) {
+        return alert.matchedAreas;
+      }
+      return Array.isArray(alert.areas) ? alert.areas : [];
+    }
+
+    function renderBanner(alert, areas) {
       bannerEl.style.display = "block";
       bannerEl.innerHTML = `
         <strong>${alert.title}</strong><br>
-        ${alert.areas.join(", ")}<br>
+        ${areas.join(", ")}<br>
         <small>${new Date(alert.receivedAt).toLocaleString("he-IL")}</small>
       `;
     }
 
-    function prependHistory(alert) {
+    function prependHistory(alert, areas) {
       const div = document.createElement("div");
       div.className = "alert-item";
       div.innerHTML = `
         <div><strong>${alert.title}</strong></div>
-        <div>${alert.areas.map(a => `<span class="area-chip">${a}</span>`).join("")}</div>
+        <div>${areas.map(a => `<span class="area-chip">${a}</span>`).join("")}</div>
         <div style="margin-top:8px;opacity:.8">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
       `;
       historyEl.prepend(div);
     }
 
-    async function tryPlaySound() {
-      if (!soundEnabled) return;
+    async function tryPlaySound(soundFile) {
+      if (!soundEnabled || !soundFile) return;
       try {
+        audioEl.src = encodeFilePath(soundFile);
         audioEl.currentTime = 0;
         await audioEl.play();
       } catch (e) {
@@ -206,37 +613,92 @@
     }
 
     function handleAlert(alert) {
-      renderBanner(alert);
-      prependHistory(alert);
-      plotAreas(alert.areas);
-      tryPlaySound();
+      if (!alert) return;
+      if (alert.id && knownAlertIds.has(alert.id)) return;
+      if (alert.id) knownAlertIds.add(alert.id);
+      if (alert.shouldNotify === false) return;
+
+      const areas = getDisplayAreas(alert);
+      if (!areas.length) return;
+
+      renderBanner(alert, areas);
+      prependHistory(alert, areas);
+      plotAreas(areas);
+      tryPlaySound(alert.soundFile);
     }
 
-    const ws = new WebSocket("ws://localhost:3000");
+    async function loadInitialHistory() {
+      try {
+        const alerts = await fetchJSON("/api/history");
+        if (Array.isArray(alerts)) {
+          alerts
+            .slice()
+            .reverse()
+            .forEach((alert) => handleAlert(alert));
+        }
+      } catch (err) {
+        console.error("history failed", err);
+      }
+    }
 
-    ws.onopen = () => {
-      statusEl.textContent = "מחובר בזמן אמת";
-    };
+    function connectWebSocket() {
+      const protocol = location.protocol === "https:" ? "wss" : "ws";
+      const ws = new WebSocket(`${protocol}://${location.host}`);
 
-    ws.onclose = () => {
-      statusEl.textContent = "החיבור נותק";
-    };
+      ws.onopen = () => {
+        statusEl.textContent = "מחובר בזמן אמת";
+      };
 
-    ws.onerror = () => {
-      statusEl.textContent = "שגיאת חיבור";
-    };
+      ws.onclose = () => {
+        statusEl.textContent = "החיבור נותק";
+      };
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+      ws.onerror = () => {
+        statusEl.textContent = "שגיאת חיבור";
+      };
 
-      if (msg.type === "welcome" && msg.payload?.lastAlert) {
-        handleAlert(msg.payload.lastAlert);
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "welcome") {
+          if (Array.isArray(msg.payload?.sounds)) {
+            sounds = msg.payload.sounds;
+          }
+          if (msg.payload?.settings) {
+            settings = msg.payload.settings;
+            renderSettings();
+          }
+          if (msg.payload?.lastAlert) {
+            handleAlert(msg.payload.lastAlert);
+          }
+        }
+
+        if (msg.type === "settings" && msg.payload) {
+          settings = msg.payload;
+          renderSettings();
+          setStatus("הגדרות עודכנו", "var(--ok)");
+        }
+
+        if (msg.type === "alert") {
+          handleAlert(msg.payload);
+        }
+      };
+    }
+
+    async function bootstrap() {
+      try {
+        await refreshConfig();
+        await loadInitialHistory();
+        setStatus("אפשר להתחיל להגדיר ערים וסאונד");
+      } catch (err) {
+        setStatus("שגיאה בטעינת ההגדרות", "var(--danger)");
+        console.error(err);
       }
 
-      if (msg.type === "alert") {
-        handleAlert(msg.payload);
-      }
-    };
+      connectWebSocket();
+    }
+
+    bootstrap();
   </script>
 </body>
 </html>
