@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מערכת התרעות</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #10131a;
+      color: white;
+    }
+
+    header {
+      padding: 16px;
+      background: #181d27;
+      border-bottom: 1px solid #2b3342;
+    }
+
+    .topbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #status {
+      opacity: 0.9;
+    }
+
+    #banner {
+      display: none;
+      margin: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #b91c1c;
+      font-size: 20px;
+      line-height: 1.5;
+    }
+
+    #layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    #map {
+      height: calc(100vh - 180px);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      background: #181d27;
+      border: 1px solid #2b3342;
+      border-radius: 16px;
+      padding: 16px;
+      overflow: auto;
+      max-height: calc(100vh - 180px);
+    }
+
+    .alert-item {
+      padding: 12px;
+      border-bottom: 1px solid #2b3342;
+    }
+
+    .area-chip {
+      display: inline-block;
+      margin: 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #243045;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <button id="enableSoundBtn">הפעלת סאונד</button>
+      <div id="status">מתחבר...</div>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+
+  <div id="layout">
+    <div id="map"></div>
+    <aside id="sidebar">
+      <h2>התרעות אחרונות</h2>
+      <div id="history"></div>
+    </aside>
+  </div>
+
+  <audio id="alarmAudio" preload="auto">
+    <source src="./alert.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const statusEl = document.getElementById("status");
+    const bannerEl = document.getElementById("banner");
+    const historyEl = document.getElementById("history");
+    const audioEl = document.getElementById("alarmAudio");
+    const enableSoundBtn = document.getElementById("enableSoundBtn");
+
+    let soundEnabled = false;
+    let markers = [];
+
+    enableSoundBtn.addEventListener("click", async () => {
+      try {
+        audioEl.volume = 1;
+        await audioEl.play();
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        soundEnabled = true;
+        enableSoundBtn.textContent = "סאונד פעיל";
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    const map = L.map("map").setView([31.7683, 35.2137], 7);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    // דוגמה התחלתית. בפרודקשן תבנה JSON מלא של יישוב -> קואורדינטות
+    const cityCoords = {
+      "באר שבע": [31.2520, 34.7915],
+      "תל אביב - מרכז העיר": [32.0853, 34.7818],
+      "ירושלים": [31.7683, 35.2137],
+      "חיפה": [32.7940, 34.9896],
+      "אשדוד": [31.8014, 34.6435],
+      "אשקלון": [31.6688, 34.5743],
+      "עומר": [31.2642, 34.8472],
+    };
+
+    function clearMarkers() {
+      markers.forEach((m) => map.removeLayer(m));
+      markers = [];
+    }
+
+    function plotAreas(areas) {
+      clearMarkers();
+
+      const points = [];
+      areas.forEach((area) => {
+        const coords = cityCoords[area];
+        if (!coords) return;
+
+        const marker = L.marker(coords).addTo(map).bindPopup(area);
+        markers.push(marker);
+        points.push(coords);
+      });
+
+      if (points.length === 1) {
+        map.setView(points[0], 11);
+      } else if (points.length > 1) {
+        map.fitBounds(points, { padding: [40, 40] });
+      }
+    }
+
+    function renderBanner(alert) {
+      bannerEl.style.display = "block";
+      bannerEl.innerHTML = `
+        <strong>${alert.title}</strong><br>
+        ${alert.areas.join(", ")}<br>
+        <small>${new Date(alert.receivedAt).toLocaleString("he-IL")}</small>
+      `;
+    }
+
+    function prependHistory(alert) {
+      const div = document.createElement("div");
+      div.className = "alert-item";
+      div.innerHTML = `
+        <div><strong>${alert.title}</strong></div>
+        <div>${alert.areas.map(a => `<span class="area-chip">${a}</span>`).join("")}</div>
+        <div style="margin-top:8px;opacity:.8">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
+      `;
+      historyEl.prepend(div);
+    }
+
+    async function tryPlaySound() {
+      if (!soundEnabled) return;
+      try {
+        audioEl.currentTime = 0;
+        await audioEl.play();
+      } catch (e) {
+        console.error("sound failed", e);
+      }
+    }
+
+    function handleAlert(alert) {
+      renderBanner(alert);
+      prependHistory(alert);
+      plotAreas(alert.areas);
+      tryPlaySound();
+    }
+
+    const ws = new WebSocket("ws://localhost:3000");
+
+    ws.onopen = () => {
+      statusEl.textContent = "מחובר בזמן אמת";
+    };
+
+    ws.onclose = () => {
+      statusEl.textContent = "החיבור נותק";
+    };
+
+    ws.onerror = () => {
+      statusEl.textContent = "שגיאת חיבור";
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.type === "welcome" && msg.payload?.lastAlert) {
+        handleAlert(msg.payload.lastAlert);
+      }
+
+      if (msg.type === "alert") {
+        handleAlert(msg.payload);
+      }
+    };
+  </script>
+</body>
+</html>
