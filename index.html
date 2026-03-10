@@ -19,8 +19,10 @@
       --accent: #14b8a6;
       --danger: #ef4444;
       --ok: #22c55e;
-      --radius: 12px;
-      --control-h: 40px;
+      --radius: 11px;
+      --control-h: 36px;
+      --glass: rgba(15, 23, 42, 0.72);
+      --shadow-soft: 0 8px 24px rgba(2, 6, 23, 0.28);
     }
 
     * {
@@ -41,12 +43,12 @@
       font-family: "Assistant", "Segoe UI", Tahoma, sans-serif;
       background: radial-gradient(circle at top right, #1e293b 0%, var(--bg) 55%);
       color: var(--text);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.35;
     }
 
     header {
-      padding: 12px 16px;
+      padding: 10px 14px;
       background: rgba(15, 23, 42, 0.9);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(4px);
@@ -54,13 +56,13 @@
 
     .topbar {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
     }
 
     .title {
-      font-size: clamp(18px, 2vw, 26px);
+      font-size: clamp(16px, 1.8vw, 22px);
       font-weight: 700;
       margin-left: auto;
       line-height: 1.15;
@@ -74,59 +76,108 @@
 
     button {
       min-height: var(--control-h);
-      padding: 8px 12px;
-      border: 0;
+      padding: 7px 11px;
+      border: 1px solid transparent;
       border-radius: var(--radius);
       cursor: pointer;
       color: #041312;
-      background: var(--accent);
+      background: linear-gradient(135deg, #14b8a6, #0f9f93);
       font-weight: 600;
-      font-size: 15px;
-      line-height: 1.15;
+      font-size: 14px;
+      line-height: 1.1;
+      white-space: normal;
+      box-shadow: 0 2px 0 rgba(255, 255, 255, 0.08) inset;
     }
 
     button.secondary {
-      background: var(--surface-soft);
+      background: rgba(30, 41, 59, 0.72);
       color: var(--text);
-      border: 1px solid var(--border);
+      border-color: #47658f;
+      box-shadow: none;
+    }
+
+    .topbar button {
+      white-space: nowrap;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
     }
 
     #status {
-      opacity: 0.9;
+      opacity: 0.95;
       color: var(--muted);
       min-width: 0;
-      font-size: 14px;
+      font-size: 12px;
+      padding: 0 9px;
+      min-height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--glass);
+      display: inline-flex;
+      align-items: center;
     }
 
     #sourceStatus {
       opacity: 0.95;
       color: var(--muted);
-      font-size: 12px;
-      max-width: 420px;
+      font-size: 11px;
+      max-width: 300px;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      padding: 0 9px;
+      min-height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--glass);
+      display: inline-flex;
+      align-items: center;
     }
 
     #banner {
       display: none;
-      margin: 16px;
-      padding: 12px 16px;
-      border-radius: 14px;
+      margin: 10px 12px;
+      padding: 10px 42px 10px 12px;
+      border-radius: 12px;
       background: linear-gradient(120deg, #b91c1c, #7f1d1d);
-      font-size: 18px;
-      line-height: 1.35;
+      font-size: 13px;
+      line-height: 1.25;
       border: 1px solid #dc2626;
       position: relative;
+      box-shadow: var(--shadow-soft);
+      max-height: 98px;
+      overflow: hidden;
+    }
+
+    #bannerContent {
+      display: grid;
+      gap: 2px;
+    }
+
+    #bannerContent strong {
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    #bannerContent .areas {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #bannerContent .time {
+      opacity: 0.9;
+      font-size: 11px;
     }
 
     #closeBannerBtn {
       position: absolute;
-      left: 10px;
+      left: 8px;
       top: 8px;
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.35);
       background: rgba(0, 0, 0, 0.18);
@@ -139,10 +190,10 @@
 
     #layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(330px, 430px);
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
       grid-template-areas: "map sidebar";
-      gap: 12px;
-      padding: 12px;
+      gap: 10px;
+      padding: 10px;
       align-items: start;
       width: min(100%, 1800px);
       margin: 0 auto;
@@ -150,35 +201,35 @@
 
     #map {
       grid-area: map;
-      height: calc(100vh - 190px);
-      border-radius: 16px;
+      height: calc(100vh - 160px);
+      border-radius: 14px;
       overflow: hidden;
       border: 1px solid var(--border);
       min-width: 0;
+      box-shadow: var(--shadow-soft);
     }
 
     #sidebar {
       grid-area: sidebar;
-      background: rgba(17, 24, 39, 0.86);
+      background: rgba(11, 18, 32, 0.88);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 10px;
       overflow: auto;
       overflow-x: hidden;
-      max-height: calc(100vh - 190px);
+      max-height: calc(100vh - 160px);
       min-width: 0;
+      box-shadow: var(--shadow-soft);
     }
 
     .sidebar-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      margin-bottom: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(17, 24, 39, 0.92);
-      padding-bottom: 6px;
+      margin-bottom: 8px;
+      position: static;
+      background: transparent;
+      padding-bottom: 0;
     }
 
     .tab-btn.active {
@@ -189,33 +240,44 @@
 
     h2, h3 {
       margin-top: 0;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      font-size: 16px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
     }
 
     .card {
-      background: var(--surface);
+      background: linear-gradient(180deg, rgba(4, 13, 31, 0.9), rgba(2, 10, 26, 0.9));
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 11px;
-      margin-bottom: 10px;
+      border-radius: 12px;
+      padding: 9px;
+      margin-bottom: 8px;
     }
 
     .hint {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.45;
     }
 
     .control-group {
       display: grid;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 5px;
+      margin-bottom: 8px;
     }
 
     .control-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
 
     .upload-row {
@@ -229,7 +291,7 @@
       align-items: center;
       gap: 6px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .upload-check input {
@@ -264,9 +326,10 @@
       border: 1px solid var(--border);
       background: #0b1220;
       color: var(--text);
-      padding: 8px 10px;
+      padding: 6px 9px;
       min-width: 0;
       width: 100%;
+      font-size: 14px;
     }
 
     input[type="file"] {
@@ -280,17 +343,18 @@
       border-radius: 10px;
       background: #1f2937;
       color: var(--text);
-      padding: 7px 10px;
+      padding: 5px 9px;
       cursor: pointer;
       font: inherit;
       font-weight: 600;
+      font-size: 13px;
     }
 
     #settingsStatus {
-      min-height: 20px;
+      min-height: 18px;
       color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 8px;
+      font-size: 12px;
+      margin-bottom: 6px;
     }
 
     #rulesList {
@@ -302,9 +366,9 @@
     .rule-item {
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 8px;
+      padding: 7px;
       margin-bottom: 6px;
-      background: #0b1220;
+      background: rgba(10, 19, 37, 0.92);
     }
 
     .rule-header {
@@ -317,16 +381,16 @@
 
     .rule-city {
       font-weight: 700;
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.2;
     }
 
     .danger {
       background: var(--danger);
       color: white;
-      font-size: 12px;
-      min-height: 34px;
-      padding: 6px 10px;
+      font-size: 11px;
+      min-height: 30px;
+      padding: 4px 9px;
       border-radius: 8px;
     }
 
@@ -344,9 +408,9 @@
     }
 
     .rule-actions button {
-      min-height: 36px;
-      padding: 7px 10px;
-      font-size: 13px;
+      min-height: 32px;
+      padding: 5px 9px;
+      font-size: 12.5px;
       white-space: nowrap;
       line-height: 1.2;
     }
@@ -373,12 +437,12 @@
 
     .muted {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .history-meta {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 8px;
     }
 
@@ -386,13 +450,27 @@
       display: none;
     }
 
-    @media (max-width: 1280px) {
+    @media (max-width: 1180px) {
       #layout {
-        grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "sidebar"
+          "map";
+        gap: 10px;
       }
 
       .title {
-        font-size: clamp(17px, 1.8vw, 22px);
+        font-size: clamp(16px, 2.1vw, 20px);
+      }
+
+      #map,
+      #sidebar {
+        max-height: none;
+        height: auto;
+      }
+
+      #map {
+        min-height: 340px;
       }
     }
 
@@ -410,31 +488,22 @@
       .title {
         width: 100%;
         margin-left: 0;
-        font-size: 20px;
+        font-size: 18px;
       }
 
       #layout {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "sidebar"
-          "map";
-        padding: 12px;
-        gap: 12px;
-      }
-
-      #map,
-      #sidebar {
-        max-height: none;
-        height: auto;
+        padding: 8px;
+        gap: 8px;
       }
 
       #map {
-        min-height: 320px;
+        min-height: 280px;
         height: auto;
       }
 
       #sidebar {
         max-height: none;
+        padding: 8px;
       }
 
       .history-toolbar,
@@ -447,7 +516,12 @@
       }
 
       button {
-        min-height: 40px;
+        min-height: 34px;
+        font-size: 13px;
+      }
+
+      .hint {
+        display: none;
       }
 
       .rule-actions {
@@ -459,7 +533,7 @@
       }
 
       .rule-actions button {
-        min-height: 36px;
+        min-height: 32px;
       }
     }
   </style>
@@ -468,7 +542,7 @@
   <header>
     <div class="topbar">
       <button id="enableSoundBtn">הפעלת סאונד</button>
-      <button id="testAlertBtn" class="secondary">בדיקת כל הערים</button>
+      <button id="testAlertBtn" class="secondary">בדיקת הכל</button>
       <div id="status">מתחבר...</div>
       <div id="sourceStatus">מקור פיקוד העורף: בודק...</div>
       <div class="title">מערכת אזעקות אישית</div>
@@ -511,11 +585,11 @@
           <label for="cityQuickSelect">בחירה מהירה מהרשימה</label>
           <div class="control-row">
             <select id="cityQuickSelect"></select>
-            <button id="useQuickCityBtn" class="secondary">העבר לשדה</button>
+            <button id="useQuickCityBtn" class="secondary">בחר</button>
           </div>
           <div class="control-row">
             <button id="testSelectedCityBtn" class="secondary">בדיקת עיר נבחרת</button>
-            <button id="testAllTrackedBtn" class="secondary">בדיקת כל הערים (מהגדרות)</button>
+            <button id="testAllTrackedBtn" class="secondary">בדיקת כל הערים</button>
           </div>
         </div>
 
@@ -531,7 +605,7 @@
           <label for="soundUploadInput">העלאת צליל חדש</label>
           <div class="upload-row">
             <input id="soundUploadInput" type="file" accept=".mp3,.wav,.aiff,.aif,.m4a,audio/*" />
-            <button id="uploadSoundBtn" class="secondary">העלה סאונד</button>
+            <button id="uploadSoundBtn" class="secondary">העלה</button>
           </div>
           <label class="upload-check" for="setUploadedAsDefaultCheck">
             <input id="setUploadedAsDefaultCheck" type="checkbox" />
@@ -1438,11 +1512,18 @@
     }
 
     function renderBanner(alert, areas) {
+      const shownAreas = areas.slice(0, 3);
+      const moreCount = Math.max(0, areas.length - shownAreas.length);
+      const areasText =
+        shownAreas.length > 0
+          ? `${shownAreas.join(", ")}${moreCount > 0 ? ` ועוד ${moreCount}` : ""}`
+          : "ללא יישובים";
+
       bannerEl.style.display = "block";
       bannerContentEl.innerHTML = `
-        <strong>${alert.title}</strong><br>
-        ${areas.join(", ")}<br>
-        <small>${new Date(alert.receivedAt).toLocaleString("he-IL")}</small>
+        <strong>${alert.title}</strong>
+        <div class="areas">${areasText}</div>
+        <div class="time">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
       `;
 
       if (bannerAutoHideTimer) {
