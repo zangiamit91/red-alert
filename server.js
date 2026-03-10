@@ -18,8 +18,13 @@ const PORT = Number(process.env.PORT || 3000);
 const SERVER_AUDIO_ENABLED = process.env.SERVER_AUDIO_ENABLED === "true";
 const MAX_HISTORY_ITEMS = 2000;
 const SOUND_UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
+const OFFICIAL_HISTORY_LOOKBACK_HOURS = 48;
+const OFFICIAL_HISTORY_REFRESH_MS = 2 * 60 * 1000;
+const OREF_TIMEZONE = "Asia/Jerusalem";
 
 const ALERT_SOURCE_URL = "https://www.oref.org.il/WarningMessages/alert/alerts.json";
+const ALERT_HISTORY_SOURCE_URL =
+  "https://www.oref.org.il/WarningMessages/alert/History/AlertsHistory.json";
 const ALLOWED_SOUND_EXTENSIONS = [".mp3", ".wav", ".aiff", ".aif", ".m4a"];
 const SOUND_EXTENSIONS = new Set(ALLOWED_SOUND_EXTENSIONS);
 const NON_SIREN_TEXT_MARKERS = ["האירוע הסתיים", "מוקדמת", "תרגיל"];
@@ -50,6 +55,7 @@ let settings = {
 let lastAlertSignature = null;
 let lastAlertObject = null;
 let history = [];
+let historySyncInProgress = false;
 
 const colors = {
   reset: "\x1b[0m",
@@ -72,6 +78,7 @@ const categoryMap = {
   5: "אירוע ביטחוני",
   6: "חדירת כלי טיס עוין",
   10: "האירוע הסתיים",
+  13: "האירוע הסתיים",
 };
 
 function cloneDefaultSettings() {
@@ -100,7 +107,7 @@ function printDivider(color = colors.dim) {
 
 function nowStr() {
   return new Date().toLocaleString("he-IL", {
-    timeZone: "Asia/Jerusalem",
+    timeZone: OREF_TIMEZONE,
   });
 }
 
@@ -327,7 +334,7 @@ function persistHistoryInBackground() {
 
 async function initializeHistory() {
   const diskHistory = await loadRawHistoryFromDisk();
-  history = sanitizeHistory(diskHistory).filter((item) => !item.isTest);
+  history = sanitizeHistory(diskHistory).filter((item) => !item.isTest && item.isSiren);
   if (history.length > 0) {
     lastAlertObject = history[0];
   }
@@ -338,6 +345,216 @@ function parseDateParam(value) {
   const parsed = new Date(String(value ?? "").trim());
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+function getTimeZoneOffsetMinutes(date, timeZone) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  const parts = formatter.formatToParts(date);
+  const map = {};
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      map[part.type] = part.value;
+    }
+  }
+
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour),
+    Number(map.minute),
+    Number(map.second)
+  );
+
+  return (asUtc - date.getTime()) / 60000;
+}
+
+function parseJerusalemDateTime(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  const match = text.match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/
+  );
+
+  if (!match) {
+    const fallback = new Date(text);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] ?? "0");
+
+  const localAsUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
+  let utcMs = localAsUtcMs;
+
+  // Two passes handle DST boundaries robustly.
+  for (let i = 0; i < 2; i += 1) {
+    const offset = getTimeZoneOffsetMinutes(new Date(utcMs), OREF_TIMEZONE);
+    utcMs = localAsUtcMs - offset * 60 * 1000;
+  }
+
+  const parsed = new Date(utcMs);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function parseHistoryAreas(value) {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v ?? "").trim()).filter(Boolean);
+  }
+
+  const text = String(value ?? "").trim();
+  if (!text) return [];
+
+  if (!text.includes(",")) {
+    return [text];
+  }
+
+  return text
+    .split(",")
+    .map((area) => area.trim())
+    .filter(Boolean);
+}
+
+function hashText(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+function buildStoredHistoryKey(item) {
+  const areas = Array.isArray(item?.areas)
+    ? item.areas.map((area) => String(area ?? "").trim()).filter(Boolean).sort().join("|")
+    : "";
+  return [
+    item?.receivedAt ?? "",
+    item?.title ?? "",
+    item?.desc ?? "",
+    Number(item?.category ?? 0),
+    areas,
+  ].join("::");
+}
+
+function normalizeOfficialHistoryEntry(raw, index = 0) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const title = String(raw.title ?? "התרעה").trim();
+  const desc = String(raw.desc ?? "").trim();
+  const category = Number(raw.category ?? raw.cat ?? 0);
+  const areas = parseHistoryAreas(raw.data);
+  const parsedDate = parseJerusalemDateTime(raw.alertDate);
+
+  if (!parsedDate) return null;
+  if (areas.length === 0) return null;
+
+  const isSiren = category === 1 && !hasNonSirenMarker(`${title} ${desc}`);
+  if (!isSiren) return null;
+
+  const rawKey = `${raw.alertDate ?? ""}::${category}::${title}::${areas.join("|")}::${index}`;
+
+  return {
+    id: `oref_${parsedDate.getTime()}_${hashText(rawKey)}`,
+    title,
+    desc,
+    areas,
+    matchedAreas: areas,
+    category,
+    categoryName: categoryMap[category] || "קטגוריה לא ידועה",
+    receivedAt: parsedDate.toISOString(),
+    shouldNotify: true,
+    soundFile: null,
+    isTest: false,
+    isSiren: true,
+  };
+}
+
+function mergeOfficialHistoryItems(items) {
+  if (!Array.isArray(items) || items.length === 0) return 0;
+
+  const existingKeys = new Set(history.map(buildStoredHistoryKey));
+  let added = 0;
+
+  for (const item of items) {
+    const key = buildStoredHistoryKey(item);
+    if (existingKeys.has(key)) continue;
+    existingKeys.add(key);
+    history.push(item);
+    added += 1;
+  }
+
+  if (added > 0) {
+    history = sanitizeHistory(history).filter((item) => !item.isTest && item.isSiren);
+    if (history.length > 0) {
+      lastAlertObject = history[0];
+    }
+    persistHistoryInBackground();
+  }
+
+  return added;
+}
+
+async function syncHistoryFromOfficialFeed() {
+  if (historySyncInProgress) return 0;
+  historySyncInProgress = true;
+
+  try {
+    const response = await fetch(ALERT_HISTORY_SOURCE_URL, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "application/json",
+        Referer: "https://www.oref.org.il/",
+        "X-Requested-With": "XMLHttpRequest",
+        Connection: "keep-alive",
+      },
+    });
+
+    if (!response.ok) return 0;
+
+    const text = (await response.text()).replace(/^\uFEFF/, "").trim();
+    if (!text || text.length < 2) return 0;
+
+    let rawItems;
+    try {
+      rawItems = JSON.parse(text);
+    } catch {
+      return 0;
+    }
+
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return 0;
+
+    const lookbackMs = OFFICIAL_HISTORY_LOOKBACK_HOURS * 60 * 60 * 1000;
+    const minTs = Date.now() - lookbackMs;
+
+    const normalized = rawItems
+      .map((item, index) => normalizeOfficialHistoryEntry(item, index))
+      .filter(Boolean)
+      .filter((item) => {
+        const ts = new Date(item.receivedAt).getTime();
+        return Number.isFinite(ts) && ts >= minTs;
+      });
+
+    return mergeOfficialHistoryItems(normalized);
+  } catch {
+    return 0;
+  } finally {
+    historySyncInProgress = false;
+  }
 }
 
 function buildHistoryFilter(query) {
@@ -612,7 +829,7 @@ async function fetchAlerts() {
       return;
     }
 
-    const text = await res.text();
+    const text = (await res.text()).replace(/^\uFEFF/, "");
     if (!text || text.length < 5) {
       scheduleNextFetch();
       return;
@@ -806,8 +1023,12 @@ wss.on("connection", (socket) => {
 
 await initializeSettings();
 await initializeHistory();
+await syncHistoryFromOfficialFeed();
 
 setInterval(printHeartbeat, 60000);
+setInterval(() => {
+  syncHistoryFromOfficialFeed().catch(() => {});
+}, OFFICIAL_HISTORY_REFRESH_MS);
 
 server.listen(PORT, () => {
   printLine(`השרת רץ בכתובת http://localhost:${PORT}`, colors.green);
