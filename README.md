@@ -5,7 +5,7 @@
 ## קישורים רשמיים
 
 - GitHub (Official): [https://github.com/zangiamit91/red-alert](https://github.com/zangiamit91/red-alert)
-- Website (Official Live Link): יתעדכן אחרי פריסה פעילה
+- Website (Official Live Link): [https://red-alert-o5nd.onrender.com](https://red-alert-o5nd.onrender.com)
 
 ## מה המערכת כוללת
 
