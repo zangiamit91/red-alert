@@ -586,6 +586,7 @@
     };
     const HISTORY_AUTO_REFRESH_MS = 60 * 1000;
     const SYSTEM_STATUS_REFRESH_MS = 30 * 1000;
+    const HISTORY_RESULT_LIMIT = 2000;
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
@@ -741,7 +742,7 @@
     function buildHistoryQueryParams() {
       const params = new URLSearchParams();
       params.set("onlySirens", "true");
-      params.set("limit", "500");
+      params.set("limit", String(HISTORY_RESULT_LIMIT));
 
       if (activeHistoryFilter.mode === "preset") {
         if (activeHistoryFilter.lastHours) {
@@ -760,6 +761,28 @@
       }
 
       return params;
+    }
+
+    function getHistoryFilterLabel() {
+      if (activeHistoryFilter.mode === "preset") {
+        const preset = activeHistoryFilter.preset || "24h";
+        const labelMap = {
+          "6h": "6 שעות אחרונות",
+          "12h": "12 שעות אחרונות",
+          "24h": "24 שעות אחרונות",
+          "3d": "3 ימים אחרונים",
+          "7d": "7 ימים אחרונים",
+        };
+        return labelMap[preset] || "טווח מהיר";
+      }
+
+      const from = activeHistoryFilter.fromIso
+        ? new Date(activeHistoryFilter.fromIso).toLocaleString("he-IL")
+        : "ללא התחלה";
+      const to = activeHistoryFilter.toIso
+        ? new Date(activeHistoryFilter.toIso).toLocaleString("he-IL")
+        : "ללא סיום";
+      return `טווח מותאם: ${from} עד ${to}`;
     }
 
     function encodeFilePath(fileName) {
@@ -1393,17 +1416,22 @@
 
     function renderHistoryList() {
       historyEl.innerHTML = "";
+      const activeFilterText = getHistoryFilterLabel();
+      const possiblyClippedHint =
+        historyItems.length >= HISTORY_RESULT_LIMIT
+          ? " (ייתכן שיש עוד תוצאות)"
+          : "";
 
       if (!historyItems.length) {
         const empty = document.createElement("div");
         empty.className = "muted";
         empty.textContent = "לא נמצאו אזעקות בטווח שנבחר.";
         historyEl.appendChild(empty);
-        historyMetaEl.textContent = "0 תוצאות";
+        historyMetaEl.textContent = `${activeFilterText} | 0 תוצאות`;
         return;
       }
 
-      historyMetaEl.textContent = `${historyItems.length} אזעקות בטווח`;
+      historyMetaEl.textContent = `${activeFilterText} | ${historyItems.length} אזעקות${possiblyClippedHint}`;
 
       historyItems.forEach((alert) => {
         const areas = getHistoryAreas(alert);
