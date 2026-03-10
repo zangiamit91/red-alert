@@ -5,7 +5,7 @@
 ## קישורים רשמיים
 
 - GitHub (Official): [https://github.com/zangiamit91/red-alert](https://github.com/zangiamit91/red-alert)
-- Website (Official Live Link): [https://red-alert-o5nd.onrender.com](https://red-alert-o5nd.onrender.com)
+- Website (Render Demo): [https://red-alert-o5nd.onrender.com](https://red-alert-o5nd.onrender.com)
 
 ## מה המערכת כוללת
 
@@ -20,6 +20,7 @@
   - טווח תאריכים מותאם
 - מפה עם סימון אזורים רלוונטיים להתראה.
 - תמיכה טובה יותר במובייל (responsive).
+- אינדיקציית מצב מקור נתונים (מחובר/חסום).
 
 ## התקנה והרצה לוקאלית
 
@@ -56,6 +57,27 @@ npm start
 מדריך מלא בעברית:
 
 - [DEPLOY_RENDER_HE.md](./DEPLOY_RENDER_HE.md)
+
+## פריסה אמינה באמת (מומלץ)
+
+בפועל, שרתי ענן (כולל Render) נחסמים לעיתים מול מקור פיקוד העורף עם `403`, ולכן היסטוריה/התראות עלולות לא לעבוד בענן.
+
+לשימוש אמין:
+
+- להריץ את השרת על מחשב בישראל (24/7)
+- לפתוח פורט מהראוטר או להשתמש ב-DuckDNS
+
+מדריך מלא:
+
+- [DEPLOY_ISRAEL_HOME_HE.md](./DEPLOY_ISRAEL_HOME_HE.md)
+
+סקריפטים מוכנים:
+
+- `scripts/setup_launchd.sh` - הפעלה קבועה ב-macOS
+- `scripts/check_stack.sh` - בדיקות health + history
+- `scripts/check_features.sh` - בדיקות פיצ'רים (כמה ערים, צליל לכל עיר, היסטוריה בלי בדיקות)
+- `scripts/setup_duckdns.sh` - עדכון DNS אוטומטי
+- `scripts/start_public_tunnel.sh` - קישור שיתוף זמני
 
 ## הערות חשובות (iPhone ומובייל)
 

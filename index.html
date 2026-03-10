@@ -79,6 +79,16 @@
       color: var(--muted);
     }
 
+    #sourceStatus {
+      opacity: 0.95;
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     #banner {
       display: none;
       margin: 16px;
@@ -376,6 +386,7 @@
       <button id="enableSoundBtn">הפעלת סאונד</button>
       <button id="testAlertBtn" class="secondary">בדיקת כל הערים</button>
       <div id="status">מתחבר...</div>
+      <div id="sourceStatus">מקור פיקוד העורף: בודק...</div>
       <div class="title">מערכת אזעקות אישית</div>
     </div>
   </header>
@@ -492,6 +503,7 @@
     const audioEl = document.getElementById("alarmAudio");
     const enableSoundBtn = document.getElementById("enableSoundBtn");
     const testAlertBtn = document.getElementById("testAlertBtn");
+    const sourceStatusEl = document.getElementById("sourceStatus");
     const settingsStatusEl = document.getElementById("settingsStatus");
     const defaultSoundSelect = document.getElementById("defaultSoundSelect");
     const cityInput = document.getElementById("cityInput");
@@ -535,6 +547,7 @@
       toIso: "",
     };
     const HISTORY_AUTO_REFRESH_MS = 60 * 1000;
+    const SYSTEM_STATUS_REFRESH_MS = 30 * 1000;
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
@@ -557,6 +570,9 @@
       "תל אביב",
       "תל אביב - יפו",
       "תל אביב - מרכז העיר",
+      "תל אביב - דרום העיר",
+      "תל אביב - מזרח",
+      "תל אביב - עבר הירקון",
       "ירושלים",
       "חיפה",
       "באר שבע",
@@ -596,6 +612,7 @@
       "חולון": [32.0158, 34.7874],
       "בני ברק": [32.0807, 34.8338],
       "רמת גן": [32.0684, 34.8248],
+      "רמת גן - מזרח": [32.0684, 34.8248],
       "גבעתיים": [32.0723, 34.8113],
       "הרצליה": [32.1656, 34.8444],
       "רעננה": [32.1848, 34.8713],
@@ -623,6 +640,12 @@
     function setStatus(text, color = "var(--muted)") {
       settingsStatusEl.textContent = text;
       settingsStatusEl.style.color = color;
+    }
+
+    function setSourceStatus(text, color = "var(--muted)", title = "") {
+      sourceStatusEl.textContent = text;
+      sourceStatusEl.style.color = color;
+      sourceStatusEl.title = title;
     }
 
     function toLocalDateTimeInputValue(dateObj) {
@@ -1390,6 +1413,43 @@
       refreshCitySuggestions();
     }
 
+    function compactErrorSummary(errorText) {
+      const raw = String(errorText || "").trim();
+      if (!raw) return "";
+      const firstPart = raw.split("|")[0].trim();
+      return firstPart.length > 120 ? `${firstPart.slice(0, 117)}...` : firstPart;
+    }
+
+    async function refreshSystemStatus() {
+      try {
+        const status = await fetchJSON("/api/system-status");
+        const alertError = String(status?.lastAlertFetchState?.error || "").trim();
+        const historyError = String(status?.historySyncState?.error || "").trim();
+
+        if (alertError || historyError) {
+          const shortError = compactErrorSummary(alertError || historyError);
+          const tooltip = [alertError, historyError].filter(Boolean).join("\n\n");
+          setSourceStatus(
+            `מקור פיקוד העורף: לא זמין כרגע (${shortError || "בדוק לוג"})`,
+            "var(--danger)",
+            tooltip
+          );
+          return;
+        }
+
+        const alertSuccessAt = status?.lastAlertFetchState?.lastSuccessAt;
+        const historySuccessAt = status?.historySyncState?.lastSuccessAt;
+        if (alertSuccessAt || historySuccessAt) {
+          setSourceStatus("מקור פיקוד העורף: מחובר", "var(--ok)");
+        } else {
+          setSourceStatus("מקור פיקוד העורף: ממתין לנתונים", "var(--muted)");
+        }
+      } catch (error) {
+        console.error("system status fetch failed", error);
+        setSourceStatus("מקור פיקוד העורף: שגיאת בדיקה", "var(--danger)");
+      }
+    }
+
     async function tryPlaySound(soundFile) {
       if (!soundEnabled || !soundFile) return;
       try {
@@ -1475,6 +1535,12 @@
         setInterval(() => {
           loadHistory().catch((err) => console.error("history periodic refresh failed", err));
         }, HISTORY_AUTO_REFRESH_MS);
+        await refreshSystemStatus();
+        setInterval(() => {
+          refreshSystemStatus().catch((err) =>
+            console.error("system status periodic refresh failed", err)
+          );
+        }, SYSTEM_STATUS_REFRESH_MS);
         refreshMapLayout();
         setStatus("אפשר להתחיל להגדיר ערים וסאונד");
       } catch (err) {
