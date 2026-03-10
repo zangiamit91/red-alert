@@ -25,6 +25,13 @@
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       margin: 0;
       font-family: "Assistant", "Segoe UI", Tahoma, sans-serif;
@@ -77,13 +84,15 @@
     #status {
       opacity: 0.9;
       color: var(--muted);
+      min-width: 0;
     }
 
     #sourceStatus {
       opacity: 0.95;
       color: var(--muted);
       font-size: 13px;
-      max-width: 360px;
+      max-width: 420px;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -119,26 +128,34 @@
 
     #layout {
       display: grid;
-      grid-template-columns: 1fr minmax(340px, 420px);
+      grid-template-columns: minmax(0, 1fr) minmax(330px, 430px);
+      grid-template-areas: "map sidebar";
       gap: 16px;
       padding: 16px;
       align-items: start;
+      width: min(100%, 1800px);
+      margin: 0 auto;
     }
 
     #map {
+      grid-area: map;
       height: calc(100vh - 230px);
       border-radius: 16px;
       overflow: hidden;
       border: 1px solid var(--border);
+      min-width: 0;
     }
 
     #sidebar {
+      grid-area: sidebar;
       background: rgba(17, 24, 39, 0.86);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
       overflow: auto;
+      overflow-x: hidden;
       max-height: calc(100vh - 230px);
+      min-width: 0;
     }
 
     .sidebar-tabs {
@@ -186,13 +203,13 @@
 
     .control-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
     }
 
     .upload-row {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
     }
 
@@ -211,21 +228,21 @@
 
     .history-toolbar {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
       margin-bottom: 10px;
     }
 
     .history-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
       margin-bottom: 10px;
     }
 
     .history-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
       margin-bottom: 10px;
     }
@@ -236,6 +253,13 @@
       background: #0b1220;
       color: var(--text);
       padding: 10px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    input[type="file"] {
+      min-width: 0;
+      width: 100%;
     }
 
     #settingsStatus {
@@ -281,13 +305,20 @@
 
     .rule-actions {
       display: grid;
-      grid-template-columns: minmax(150px, 1fr) auto auto;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       align-items: center;
+      min-width: 0;
+    }
+
+    .rule-actions > * {
+      min-width: 0;
+      width: 100%;
     }
 
     .rule-actions button {
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.2;
     }
 
     .alert-item {
@@ -325,6 +356,12 @@
       display: none;
     }
 
+    @media (max-width: 1280px) {
+      #layout {
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+      }
+    }
+
     @media (max-width: 1024px) {
       header {
         position: sticky;
@@ -344,6 +381,9 @@
 
       #layout {
         grid-template-columns: 1fr;
+        grid-template-areas:
+          "sidebar"
+          "map";
         padding: 12px;
         gap: 12px;
       }
@@ -356,12 +396,10 @@
 
       #map {
         min-height: 360px;
-        order: 2;
         height: auto;
       }
 
       #sidebar {
-        order: 1;
         max-height: none;
       }
 
