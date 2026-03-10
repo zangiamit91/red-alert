@@ -80,6 +80,8 @@ let historySyncState = {
   addedCount: 0,
   error: null,
 };
+let orefCookieHeader = "";
+let orefCookieFetchedAt = 0;
 
 const colors = {
   reset: "\x1b[0m",
@@ -140,18 +142,75 @@ function buildOrefFetchHeaders() {
     "User-Agent": "Mozilla/5.0",
     Accept: "application/json",
     Referer: "https://www.oref.org.il/",
+    "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+    Origin: "https://www.oref.org.il",
     "X-Requested-With": "XMLHttpRequest",
     Connection: "keep-alive",
   };
 }
 
+function buildCookieHeaderFromSetCookieHeaders(setCookieHeaders) {
+  if (!Array.isArray(setCookieHeaders) || setCookieHeaders.length === 0) {
+    return "";
+  }
+
+  return setCookieHeaders
+    .map((cookie) => String(cookie || "").split(";")[0].trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+function extractSetCookieHeaders(headers) {
+  if (!headers) return [];
+
+  if (typeof headers.getSetCookie === "function") {
+    return headers.getSetCookie();
+  }
+
+  const raw = headers.get("set-cookie");
+  if (!raw) return [];
+  return raw.split(/,(?=[^;]+=[^;]+)/g);
+}
+
+async function getOrefCookieHeader() {
+  const now = Date.now();
+  if (orefCookieHeader && now - orefCookieFetchedAt < 15 * 60 * 1000) {
+    return orefCookieHeader;
+  }
+
+  try {
+    const bootstrapRes = await fetch("https://www.oref.org.il/", {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+      },
+    });
+
+    const setCookieHeaders = extractSetCookieHeaders(bootstrapRes.headers);
+    const cookieHeader = buildCookieHeaderFromSetCookieHeaders(setCookieHeaders);
+    if (cookieHeader) {
+      orefCookieHeader = cookieHeader;
+      orefCookieFetchedAt = now;
+    }
+  } catch {}
+
+  return orefCookieHeader;
+}
+
 async function fetchJsonFromSourceList(urls) {
   const failures = [];
+  const cookieHeader = await getOrefCookieHeader();
 
   for (const url of urls) {
     try {
+      const headers = buildOrefFetchHeaders();
+      if (cookieHeader) {
+        headers.Cookie = cookieHeader;
+      }
+
       const res = await fetch(url, {
-        headers: buildOrefFetchHeaders(),
+        headers,
       });
 
       if (!res.ok) {
@@ -1009,6 +1068,10 @@ app.get("/api/system-status", (req, res) => {
     now: new Date().toISOString(),
     historyCount: history.length,
     lastAlertObject,
+    orefCookie: {
+      hasCookie: Boolean(orefCookieHeader),
+      fetchedAt: orefCookieFetchedAt ? new Date(orefCookieFetchedAt).toISOString() : null,
+    },
     lastAlertFetchState,
     historySyncState,
   });
