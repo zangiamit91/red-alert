@@ -19,8 +19,9 @@
       --accent: #14b8a6;
       --danger: #ef4444;
       --ok: #22c55e;
-      --radius: 10px;
-      --control-h: 34px;
+      --radius: 11px;
+      --radius-sm: 8px;
+      --control-h: 32px;
       --glass: rgba(15, 23, 42, 0.72);
       --shadow-soft: 0 8px 24px rgba(2, 6, 23, 0.28);
     }
@@ -43,12 +44,12 @@
       font-family: "Assistant", "Segoe UI", Tahoma, sans-serif;
       background: radial-gradient(circle at top right, #1e293b 0%, var(--bg) 55%);
       color: var(--text);
-      font-size: 13px;
-      line-height: 1.35;
+      font-size: 12.5px;
+      line-height: 1.3;
     }
 
     header {
-      padding: 10px 14px;
+      padding: 8px 12px;
       background: rgba(15, 23, 42, 0.9);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(4px);
@@ -62,7 +63,7 @@
     }
 
     .title {
-      font-size: clamp(16px, 1.8vw, 22px);
+      font-size: clamp(15px, 1.7vw, 21px);
       font-weight: 700;
       margin-left: auto;
       line-height: 1.15;
@@ -76,17 +77,18 @@
 
     button {
       min-height: var(--control-h);
-      padding: 6px 10px;
+      padding: 5px 10px;
       border: 1px solid transparent;
       border-radius: var(--radius);
       cursor: pointer;
       color: #041312;
       background: linear-gradient(135deg, #14b8a6, #0f9f93);
       font-weight: 600;
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.1;
       white-space: normal;
       box-shadow: 0 2px 0 rgba(255, 255, 255, 0.08) inset;
+      transition: transform 120ms ease, filter 120ms ease;
     }
 
     button.secondary {
@@ -108,9 +110,9 @@
       opacity: 0.95;
       color: var(--muted);
       min-width: 0;
-      font-size: 11px;
+      font-size: 10.5px;
       padding: 0 9px;
-      min-height: 28px;
+      min-height: 26px;
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--glass);
@@ -121,14 +123,14 @@
     #sourceStatus {
       opacity: 0.95;
       color: var(--muted);
-      font-size: 10px;
+      font-size: 10.5px;
       max-width: 240px;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       padding: 0 9px;
-      min-height: 28px;
+      min-height: 26px;
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--glass);
@@ -139,30 +141,30 @@
     #banner {
       display: none;
       margin: 0;
-      padding: 8px 34px 8px 10px;
-      border-radius: 12px;
+      padding: 10px 36px 10px 12px;
+      border-radius: 10px;
       background: linear-gradient(120deg, #b91c1c, #7f1d1d);
-      font-size: 13px;
-      line-height: 1.25;
+      font-size: 12.5px;
+      line-height: 1.15;
       border: 1px solid #dc2626;
       position: fixed;
-      top: 72px;
+      top: 62px;
       right: 10px;
       left: auto;
-      width: min(420px, calc(100vw - 20px));
+      width: min(360px, calc(100vw - 20px));
       box-shadow: var(--shadow-soft);
-      max-height: 86px;
-      overflow: hidden;
+      max-height: 110px;
+      overflow: auto;
       z-index: 80;
     }
 
     #bannerContent {
       display: grid;
-      gap: 2px;
+      gap: 3px;
     }
 
     #bannerContent strong {
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.1;
     }
 
@@ -174,15 +176,15 @@
 
     #bannerContent .time {
       opacity: 0.9;
-      font-size: 10px;
+      font-size: 9.5px;
     }
 
     #closeBannerBtn {
       position: absolute;
       left: 8px;
-      top: 6px;
-      width: 22px;
-      height: 22px;
+      top: 8px;
+      width: 20px;
+      height: 20px;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.35);
       background: rgba(0, 0, 0, 0.18);
@@ -195,10 +197,10 @@
 
     #layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(290px, 380px);
+      grid-template-columns: minmax(0, 1fr) minmax(270px, 350px);
       grid-template-areas: "map sidebar";
-      gap: 8px;
-      padding: 8px;
+      gap: 10px;
+      padding: 9px;
       align-items: start;
       width: min(100%, 1800px);
       margin: 0 auto;
@@ -206,7 +208,7 @@
 
     #map {
       grid-area: map;
-      height: calc(100vh - 142px);
+      height: calc(100vh - 122px);
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid var(--border);
@@ -218,20 +220,33 @@
       grid-area: sidebar;
       background: rgba(11, 18, 32, 0.88);
       border: 1px solid var(--border);
-      border-radius: 13px;
-      padding: 8px;
+      border-radius: 12px;
+      padding: 9px;
       overflow: auto;
       overflow-x: hidden;
-      max-height: calc(100vh - 142px);
+      max-height: calc(100vh - 122px);
       min-width: 0;
       box-shadow: var(--shadow-soft);
+    }
+
+    #sidebar::-webkit-scrollbar,
+    #rulesList::-webkit-scrollbar,
+    #history::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb,
+    #rulesList::-webkit-scrollbar-thumb,
+    #history::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.55);
+      border-radius: 999px;
     }
 
     .sidebar-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 6px;
+      gap: 5px;
+      margin-bottom: 8px;
       position: static;
       background: transparent;
       padding-bottom: 0;
@@ -245,89 +260,121 @@
 
     h2, h3 {
       margin-top: 0;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       line-height: 1.2;
     }
 
     h3 {
-      font-size: 14px;
+      font-size: 13px;
     }
 
     label {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10.5px;
     }
 
     .card {
       background: linear-gradient(180deg, rgba(4, 13, 31, 0.9), rgba(2, 10, 26, 0.9));
       border: 1px solid var(--border);
-      border-radius: 11px;
-      padding: 8px;
-      margin-bottom: 6px;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
     }
 
     .hint {
-      margin: 0 0 6px;
+      margin: 0 0 7px;
       color: var(--muted);
-      font-size: 11px;
-      line-height: 1.45;
+      font-size: 10.5px;
+      line-height: 1.35;
     }
 
     .control-group {
       display: grid;
-      gap: 5px;
-      margin-bottom: 7px;
+      gap: 4px;
+      margin-bottom: 6px;
     }
 
     .control-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 6px;
+      gap: 5px;
+    }
+
+    .admin-row {
+      grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .upload-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 6px;
+      gap: 5px;
     }
 
     .upload-check {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10.5px;
+      min-height: 24px;
+      width: fit-content;
     }
 
     .upload-check input[type="checkbox"] {
-      appearance: auto;
-      width: 16px;
-      height: 16px;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px !important;
+      height: 16px !important;
+      min-width: 16px;
+      min-height: 16px;
+      max-width: 16px;
+      max-height: 16px;
       margin: 0;
+      padding: 0;
       transform: none;
-      accent-color: var(--accent);
-      flex: 0 0 auto;
+      zoom: 1;
+      border: 1px solid #4f6787;
+      border-radius: 4px;
+      background: #0b1220;
+      display: inline-grid;
+      place-content: center;
+      flex: 0 0 16px;
+      cursor: pointer;
+    }
+
+    .upload-check input[type="checkbox"]::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      transform: scale(0);
+      transition: transform 100ms ease-out;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .upload-check input[type="checkbox"]:checked::before {
+      transform: scale(1);
     }
 
     .history-toolbar {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
+      gap: 5px;
+      margin-bottom: 7px;
     }
 
     .history-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
+      gap: 5px;
+      margin-bottom: 7px;
     }
 
     .history-actions {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
+      gap: 5px;
+      margin-bottom: 7px;
     }
 
     input:not([type="checkbox"]):not([type="file"]),
@@ -337,10 +384,10 @@
       border: 1px solid var(--border);
       background: #0b1220;
       color: var(--text);
-      padding: 6px 9px;
+      padding: 5px 9px;
       min-width: 0;
       width: 100%;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     input[type="file"] {
@@ -349,34 +396,34 @@
       border: 1px solid var(--border);
       background: #0b1220;
       color: var(--text);
-      padding: 4px 6px;
+      padding: 4px 5px;
       min-width: 0;
       width: 100%;
-      font-size: 13px;
+      font-size: 12.5px;
     }
 
     input[type="file"]::file-selector-button {
-      margin-inline-end: 8px;
+      margin-inline-end: 7px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 9px;
       background: #1f2937;
       color: var(--text);
-      padding: 5px 9px;
+      padding: 4px 8px;
       cursor: pointer;
       font: inherit;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     #settingsStatus {
-      min-height: 18px;
+      min-height: 16px;
       color: var(--muted);
-      font-size: 11px;
-      margin-bottom: 6px;
+      font-size: 10.5px;
+      margin-bottom: 5px;
     }
 
     #rulesList {
-      max-height: 280px;
+      max-height: 260px;
       overflow: auto;
       padding-right: 4px;
     }
@@ -384,8 +431,8 @@
     .rule-item {
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 7px;
-      margin-bottom: 6px;
+      padding: 6px;
+      margin-bottom: 5px;
       background: rgba(10, 19, 37, 0.92);
     }
 
@@ -394,28 +441,28 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .rule-city {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
       line-height: 1.2;
     }
 
     .danger {
       background: var(--danger);
       color: white;
-      font-size: 11px;
-      min-height: 28px;
-      padding: 4px 8px;
-      border-radius: 8px;
+      font-size: 10.5px;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
     }
 
     .rule-actions {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 6px;
+      gap: 5px;
       align-items: center;
       min-width: 0;
     }
@@ -426,42 +473,42 @@
     }
 
     .rule-actions button {
-      min-height: 30px;
-      padding: 4px 8px;
-      font-size: 12px;
+      min-height: 27px;
+      padding: 3px 8px;
+      font-size: 11px;
       white-space: nowrap;
       line-height: 1.2;
     }
 
     .alert-item {
-      padding: 12px;
+      padding: 8px;
       border-bottom: 1px solid var(--border);
     }
 
     #history {
-      max-height: 280px;
+      max-height: 260px;
       overflow: auto;
       padding-right: 4px;
     }
 
     .area-chip {
       display: inline-block;
-      margin: 3px;
-      padding: 4px 8px;
+      margin: 2px;
+      padding: 3px 7px;
       border-radius: 999px;
       background: #243045;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .muted {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10.5px;
     }
 
     .history-meta {
       color: var(--muted);
-      font-size: 11px;
-      margin-bottom: 8px;
+      font-size: 10.5px;
+      margin-bottom: 6px;
     }
 
     .hidden {
@@ -474,7 +521,7 @@
         grid-template-areas:
           "sidebar"
           "map";
-        gap: 10px;
+        gap: 8px;
       }
 
       .title {
@@ -488,7 +535,7 @@
       }
 
       #map {
-        min-height: 300px;
+        min-height: 280px;
       }
     }
 
@@ -510,8 +557,8 @@
       }
 
       #layout {
-        padding: 8px;
-        gap: 8px;
+        padding: 7px;
+        gap: 7px;
       }
 
       #map {
@@ -524,28 +571,15 @@
         padding: 8px;
       }
 
-      .history-toolbar,
-      .history-grid,
-      .history-actions,
-      .control-row,
-      .upload-row,
-      .rule-actions {
-        grid-template-columns: 1fr;
-      }
-
       button {
-        min-height: 34px;
-        font-size: 13px;
-      }
-
-      .hint {
-        display: none;
+        min-height: var(--control-h);
+        font-size: 12.5px;
       }
 
       #banner {
         top: 60px;
         right: 8px;
-        width: calc(100vw - 16px);
+        width: min(340px, calc(100vw - 16px));
       }
 
       .rule-actions {
@@ -558,6 +592,35 @@
 
       .rule-actions button {
         min-height: 32px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .history-toolbar,
+      .history-grid,
+      .history-actions,
+      .control-row,
+      .upload-row,
+      .admin-row {
+        grid-template-columns: 1fr;
+      }
+
+      .rule-actions {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .rule-actions select {
+        grid-column: 1 / -1;
+      }
+
+      .hint {
+        display: none;
+      }
+
+      #banner {
+        top: 56px;
+        right: 6px;
+        width: calc(100vw - 12px);
       }
     }
   </style>
@@ -592,6 +655,16 @@
           ניתן לבחור כמה ערים במקביל. המערכת תשמיע התראה רק אם יש התאמה לאחת הערים שהוגדרו.
           לכל עיר אפשר להגדיר צליל ייחודי.
         </p>
+
+        <div id="adminKeyWrap" class="control-group hidden">
+          <label for="adminKeyInput">מפתח ניהול</label>
+          <div class="control-row admin-row">
+            <input id="adminKeyInput" type="password" placeholder="הדבק מפתח ניהול" autocomplete="off" />
+            <button id="saveAdminKeyBtn" class="secondary">שמור</button>
+            <button id="clearAdminKeyBtn" class="secondary">נקה</button>
+          </div>
+          <div class="muted">נדרש מפתח ניהול כדי לשנות הגדרות/להעלות סאונד.</div>
+        </div>
 
         <div class="control-group">
           <label for="defaultSoundSelect">צליל ברירת מחדל</label>
@@ -687,6 +760,10 @@
     const testAlertBtn = document.getElementById("testAlertBtn");
     const sourceStatusEl = document.getElementById("sourceStatus");
     const settingsStatusEl = document.getElementById("settingsStatus");
+    const adminKeyWrap = document.getElementById("adminKeyWrap");
+    const adminKeyInput = document.getElementById("adminKeyInput");
+    const saveAdminKeyBtn = document.getElementById("saveAdminKeyBtn");
+    const clearAdminKeyBtn = document.getElementById("clearAdminKeyBtn");
     const defaultSoundSelect = document.getElementById("defaultSoundSelect");
     const cityInput = document.getElementById("cityInput");
     const citySuggestionsEl = document.getElementById("citySuggestions");
@@ -731,11 +808,14 @@
     const HISTORY_AUTO_REFRESH_MS = 60 * 1000;
     const SYSTEM_STATUS_REFRESH_MS = 30 * 1000;
     const HISTORY_RESULT_LIMIT = 2000;
+    const ADMIN_KEY_STORAGE_KEY = "red_alert_admin_key";
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
       defaultSound: "",
     };
+    let adminProtectionEnabled = false;
+    let adminKey = localStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
 
     const map = L.map("map").setView([31.7683, 35.2137], 7);
 
@@ -823,6 +903,30 @@
     function setStatus(text, color = "var(--muted)") {
       settingsStatusEl.textContent = text;
       settingsStatusEl.style.color = color;
+    }
+
+    function buildAuthHeaders(existingHeaders) {
+      const headers = new Headers(existingHeaders || {});
+      if (adminKey) {
+        headers.set("x-admin-key", adminKey);
+      }
+      return headers;
+    }
+
+    async function refreshAppConfig() {
+      try {
+        const config = await fetchJSON("/api/app-config");
+        adminProtectionEnabled = Boolean(config?.adminProtectionEnabled);
+      } catch {
+        adminProtectionEnabled = false;
+      }
+
+      adminKeyWrap.classList.toggle("hidden", !adminProtectionEnabled);
+      if (adminProtectionEnabled) {
+        adminKeyInput.value = adminKey;
+      } else {
+        adminKeyInput.value = "";
+      }
     }
 
     function setSourceStatus(text, color = "var(--muted)", title = "") {
@@ -1160,7 +1264,7 @@
 
         const testBtn = document.createElement("button");
         testBtn.className = "secondary";
-        testBtn.textContent = "בדיקת עיר";
+        testBtn.textContent = "בדיקה";
         testBtn.addEventListener("click", async () => {
           try {
             await sendTestAlertForAreas([cityName]);
@@ -1174,7 +1278,7 @@
 
         const previewBtn = document.createElement("button");
         previewBtn.className = "secondary";
-        previewBtn.textContent = "נגן צליל";
+        previewBtn.textContent = "ניגון";
         previewBtn.addEventListener("click", async () => {
           const mappedSound = getCityMappedSound(cityName) || settings.defaultSound;
           if (!mappedSound) {
@@ -1202,8 +1306,15 @@
     }
 
     async function fetchJSON(url, options) {
-      const res = await fetch(url, options);
+      const requestOptions = {
+        ...(options || {}),
+        headers: buildAuthHeaders(options?.headers),
+      };
+      const res = await fetch(url, requestOptions);
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("נדרש מפתח ניהול תקין כדי לבצע פעולה זו");
+        }
         throw new Error(`Request failed: ${res.status}`);
       }
       return res.json();
@@ -1227,6 +1338,7 @@
 
       const res = await fetch("/api/sounds/upload", {
         method: "POST",
+        headers: buildAuthHeaders(),
         body: form,
       });
 
@@ -1273,6 +1385,24 @@
     defaultSoundSelect.addEventListener("change", async () => {
       settings.defaultSound = defaultSoundSelect.value;
       await saveSettings();
+    });
+
+    saveAdminKeyBtn.addEventListener("click", () => {
+      adminKey = adminKeyInput.value.trim();
+      if (adminKey) {
+        localStorage.setItem(ADMIN_KEY_STORAGE_KEY, adminKey);
+        setStatus("מפתח ניהול נשמר בדפדפן", "var(--ok)");
+      } else {
+        localStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+        setStatus("שדה מפתח ניהול ריק", "var(--muted)");
+      }
+    });
+
+    clearAdminKeyBtn.addEventListener("click", () => {
+      adminKey = "";
+      adminKeyInput.value = "";
+      localStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+      setStatus("מפתח ניהול נוקה", "var(--muted)");
     });
 
     addRuleBtn.addEventListener("click", async () => {
@@ -1745,6 +1875,7 @@
     async function bootstrap() {
       try {
         setSidebarTab("settings");
+        await refreshAppConfig();
         await refreshConfig();
         syncHistoryCustomVisibility();
         applyPresetToDateInputs("24h");

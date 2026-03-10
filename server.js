@@ -16,6 +16,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 const PORT = Number(process.env.PORT || 3000);
 const SERVER_AUDIO_ENABLED = process.env.SERVER_AUDIO_ENABLED === "true";
+const ADMIN_KEY = String(process.env.ADMIN_KEY || "").trim();
 const MAX_HISTORY_ITEMS = 2000;
 const SOUND_UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
 const OFFICIAL_HISTORY_LOOKBACK_HOURS = 48;
@@ -106,6 +107,35 @@ const categoryMap = {
   10: "האירוע הסתיים",
   13: "האירוע הסתיים",
 };
+
+function extractAdminKeyFromRequest(req) {
+  const headerValue = String(req.get("x-admin-key") || "").trim();
+  if (headerValue) return headerValue;
+
+  const authHeader = String(req.get("authorization") || "").trim();
+  if (authHeader.toLowerCase().startsWith("bearer ")) {
+    return authHeader.slice(7).trim();
+  }
+
+  return "";
+}
+
+function isAdminAuthorized(req) {
+  if (!ADMIN_KEY) return true;
+  return extractAdminKeyFromRequest(req) === ADMIN_KEY;
+}
+
+function requireAdmin(req, res, next) {
+  if (isAdminAuthorized(req)) {
+    next();
+    return;
+  }
+
+  res.status(401).json({
+    error: "admin-key-required",
+    message: "Admin key is required for this action",
+  });
+}
 
 function cloneDefaultSettings() {
   return {
@@ -1082,7 +1112,13 @@ app.get("/api/sounds", async (req, res) => {
   res.json(availableSounds);
 });
 
-app.post("/api/sounds/upload", (req, res) => {
+app.get("/api/app-config", (req, res) => {
+  res.json({
+    adminProtectionEnabled: Boolean(ADMIN_KEY),
+  });
+});
+
+app.post("/api/sounds/upload", requireAdmin, (req, res) => {
   uploadSound.single("soundFile")(req, res, async (error) => {
     if (error) {
       if (error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE") {
@@ -1141,7 +1177,7 @@ app.get("/api/settings", (req, res) => {
   res.json(settings);
 });
 
-app.put("/api/settings", async (req, res) => {
+app.put("/api/settings", requireAdmin, async (req, res) => {
   await refreshSoundsAndSettings();
   settings = sanitizeSettings(req.body, availableSounds);
   await persistSettings();
@@ -1154,7 +1190,7 @@ app.put("/api/settings", async (req, res) => {
   res.json(settings);
 });
 
-app.post("/api/test-alert", (req, res) => {
+app.post("/api/test-alert", requireAdmin, (req, res) => {
   const rawAreas = Array.isArray(req.body?.areas) ? req.body.areas : [];
   const cleanedAreas = rawAreas
     .map((area) => String(area ?? "").trim())

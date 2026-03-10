@@ -6,6 +6,17 @@ APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 NODE_BIN="$(command -v node || true)"
 PLIST_PATH="$HOME/Library/LaunchAgents/com.amit.red-alert.plist"
 LABEL="com.amit.red-alert"
+ADMIN_KEY_VALUE="${ADMIN_KEY:-}"
+
+xml_escape() {
+  local value="$1"
+  value="${value//&/&amp;}"
+  value="${value//</&lt;}"
+  value="${value//>/&gt;}"
+  value="${value//\"/&quot;}"
+  value="${value//\'/&apos;}"
+  printf '%s' "$value"
+}
 
 if [[ -z "$NODE_BIN" ]]; then
   if [[ -x "/opt/homebrew/bin/node" ]]; then
@@ -21,6 +32,16 @@ if [[ -z "$NODE_BIN" || ! -x "$NODE_BIN" ]]; then
 fi
 
 mkdir -p "$HOME/Library/LaunchAgents"
+
+ADMIN_KEY_PLIST_ENTRY=""
+if [[ -n "$ADMIN_KEY_VALUE" ]]; then
+  ESCAPED_ADMIN_KEY="$(xml_escape "$ADMIN_KEY_VALUE")"
+  ADMIN_KEY_PLIST_ENTRY=$(cat <<EOF
+      <key>ADMIN_KEY</key>
+      <string>$ESCAPED_ADMIN_KEY</string>
+EOF
+)
+fi
 
 cat >"$PLIST_PATH" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,6 +71,7 @@ cat >"$PLIST_PATH" <<PLIST
       <string>3000</string>
       <key>SERVER_AUDIO_ENABLED</key>
       <string>false</string>
+${ADMIN_KEY_PLIST_ENTRY}
     </dict>
   </dict>
 </plist>
