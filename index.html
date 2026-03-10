@@ -19,8 +19,8 @@
       --accent: #14b8a6;
       --danger: #ef4444;
       --ok: #22c55e;
-      --radius: 11px;
-      --control-h: 36px;
+      --radius: 10px;
+      --control-h: 34px;
       --glass: rgba(15, 23, 42, 0.72);
       --shadow-soft: 0 8px 24px rgba(2, 6, 23, 0.28);
     }
@@ -43,7 +43,7 @@
       font-family: "Assistant", "Segoe UI", Tahoma, sans-serif;
       background: radial-gradient(circle at top right, #1e293b 0%, var(--bg) 55%);
       color: var(--text);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.35;
     }
 
@@ -76,14 +76,14 @@
 
     button {
       min-height: var(--control-h);
-      padding: 7px 11px;
+      padding: 6px 10px;
       border: 1px solid transparent;
       border-radius: var(--radius);
       cursor: pointer;
       color: #041312;
       background: linear-gradient(135deg, #14b8a6, #0f9f93);
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.1;
       white-space: normal;
       box-shadow: 0 2px 0 rgba(255, 255, 255, 0.08) inset;
@@ -108,7 +108,7 @@
       opacity: 0.95;
       color: var(--muted);
       min-width: 0;
-      font-size: 12px;
+      font-size: 11px;
       padding: 0 9px;
       min-height: 28px;
       border: 1px solid var(--border);
@@ -121,8 +121,8 @@
     #sourceStatus {
       opacity: 0.95;
       color: var(--muted);
-      font-size: 11px;
-      max-width: 300px;
+      font-size: 10px;
+      max-width: 240px;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -138,17 +138,22 @@
 
     #banner {
       display: none;
-      margin: 10px 12px;
-      padding: 10px 42px 10px 12px;
+      margin: 0;
+      padding: 8px 34px 8px 10px;
       border-radius: 12px;
       background: linear-gradient(120deg, #b91c1c, #7f1d1d);
       font-size: 13px;
       line-height: 1.25;
       border: 1px solid #dc2626;
-      position: relative;
+      position: fixed;
+      top: 72px;
+      right: 10px;
+      left: auto;
+      width: min(420px, calc(100vw - 20px));
       box-shadow: var(--shadow-soft);
-      max-height: 98px;
+      max-height: 86px;
       overflow: hidden;
+      z-index: 80;
     }
 
     #bannerContent {
@@ -157,7 +162,7 @@
     }
 
     #bannerContent strong {
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.1;
     }
 
@@ -169,15 +174,15 @@
 
     #bannerContent .time {
       opacity: 0.9;
-      font-size: 11px;
+      font-size: 10px;
     }
 
     #closeBannerBtn {
       position: absolute;
       left: 8px;
-      top: 8px;
-      width: 24px;
-      height: 24px;
+      top: 6px;
+      width: 22px;
+      height: 22px;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.35);
       background: rgba(0, 0, 0, 0.18);
@@ -190,10 +195,10 @@
 
     #layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+      grid-template-columns: minmax(0, 1fr) minmax(290px, 380px);
       grid-template-areas: "map sidebar";
-      gap: 10px;
-      padding: 10px;
+      gap: 8px;
+      padding: 8px;
       align-items: start;
       width: min(100%, 1800px);
       margin: 0 auto;
@@ -201,7 +206,7 @@
 
     #map {
       grid-area: map;
-      height: calc(100vh - 160px);
+      height: calc(100vh - 142px);
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid var(--border);
@@ -213,11 +218,11 @@
       grid-area: sidebar;
       background: rgba(11, 18, 32, 0.88);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px;
+      border-radius: 13px;
+      padding: 8px;
       overflow: auto;
       overflow-x: hidden;
-      max-height: calc(100vh - 160px);
+      max-height: calc(100vh - 142px);
       min-width: 0;
       box-shadow: var(--shadow-soft);
     }
@@ -226,7 +231,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       position: static;
       background: transparent;
       padding-bottom: 0;
@@ -245,33 +250,33 @@
     }
 
     h3 {
-      font-size: 16px;
+      font-size: 14px;
     }
 
     label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .card {
       background: linear-gradient(180deg, rgba(4, 13, 31, 0.9), rgba(2, 10, 26, 0.9));
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 9px;
-      margin-bottom: 8px;
+      border-radius: 11px;
+      padding: 8px;
+      margin-bottom: 6px;
     }
 
     .hint {
       margin: 0 0 6px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.45;
     }
 
     .control-group {
       display: grid;
       gap: 5px;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
 
     .control-row {
@@ -294,9 +299,14 @@
       font-size: 11px;
     }
 
-    .upload-check input {
-      transform: scale(1.15);
+    .upload-check input[type="checkbox"] {
+      appearance: auto;
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      transform: none;
       accent-color: var(--accent);
+      flex: 0 0 auto;
     }
 
     .history-toolbar {
@@ -320,7 +330,8 @@
       margin-bottom: 8px;
     }
 
-    input, select {
+    input:not([type="checkbox"]):not([type="file"]),
+    select {
       min-height: var(--control-h);
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -333,8 +344,15 @@
     }
 
     input[type="file"] {
+      min-height: var(--control-h);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text);
+      padding: 4px 6px;
       min-width: 0;
       width: 100%;
+      font-size: 13px;
     }
 
     input[type="file"]::file-selector-button {
@@ -353,7 +371,7 @@
     #settingsStatus {
       min-height: 18px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       margin-bottom: 6px;
     }
 
@@ -381,7 +399,7 @@
 
     .rule-city {
       font-weight: 700;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.2;
     }
 
@@ -389,8 +407,8 @@
       background: var(--danger);
       color: white;
       font-size: 11px;
-      min-height: 30px;
-      padding: 4px 9px;
+      min-height: 28px;
+      padding: 4px 8px;
       border-radius: 8px;
     }
 
@@ -408,9 +426,9 @@
     }
 
     .rule-actions button {
-      min-height: 32px;
-      padding: 5px 9px;
-      font-size: 12.5px;
+      min-height: 30px;
+      padding: 4px 8px;
+      font-size: 12px;
       white-space: nowrap;
       line-height: 1.2;
     }
@@ -428,21 +446,21 @@
 
     .area-chip {
       display: inline-block;
-      margin: 4px;
-      padding: 6px 10px;
+      margin: 3px;
+      padding: 4px 8px;
       border-radius: 999px;
       background: #243045;
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .muted {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .history-meta {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       margin-bottom: 8px;
     }
 
@@ -470,7 +488,7 @@
       }
 
       #map {
-        min-height: 340px;
+        min-height: 300px;
       }
     }
 
@@ -488,7 +506,7 @@
       .title {
         width: 100%;
         margin-left: 0;
-        font-size: 18px;
+        font-size: 17px;
       }
 
       #layout {
@@ -497,7 +515,7 @@
       }
 
       #map {
-        min-height: 280px;
+        min-height: 240px;
         height: auto;
       }
 
@@ -522,6 +540,12 @@
 
       .hint {
         display: none;
+      }
+
+      #banner {
+        top: 60px;
+        right: 8px;
+        width: calc(100vw - 16px);
       }
 
       .rule-actions {
