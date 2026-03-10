@@ -22,9 +22,18 @@ const OFFICIAL_HISTORY_LOOKBACK_HOURS = 48;
 const OFFICIAL_HISTORY_REFRESH_MS = 2 * 60 * 1000;
 const OREF_TIMEZONE = "Asia/Jerusalem";
 
-const ALERT_SOURCE_URL = "https://www.oref.org.il/WarningMessages/alert/alerts.json";
-const ALERT_HISTORY_SOURCE_URL =
-  "https://www.oref.org.il/WarningMessages/alert/History/AlertsHistory.json";
+const ALERT_SOURCE_URLS = [
+  "https://www.oref.org.il/WarningMessages/alert/alerts.json",
+  "https://www.oref.org.il/warningMessages/alert/alerts.json",
+  "https://www.oref.org.il/WarningMessages/alert/Alerts.json",
+  "https://www.oref.org.il/warningMessages/alert/Alerts.json",
+];
+const ALERT_HISTORY_SOURCE_URLS = [
+  "https://www.oref.org.il/WarningMessages/alert/History/AlertsHistory.json",
+  "https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json",
+  "https://alerts-history.oref.org.il/WarningMessages/alert/History/AlertsHistory.json",
+  "https://alerts-history.oref.org.il/warningMessages/alert/History/AlertsHistory.json",
+];
 const ALLOWED_SOUND_EXTENSIONS = [".mp3", ".wav", ".aiff", ".aif", ".m4a"];
 const SOUND_EXTENSIONS = new Set(ALLOWED_SOUND_EXTENSIONS);
 const NON_SIREN_TEXT_MARKERS = ["האירוע הסתיים", "מוקדמת", "תרגיל"];
@@ -56,6 +65,21 @@ let lastAlertSignature = null;
 let lastAlertObject = null;
 let history = [];
 let historySyncInProgress = false;
+let lastAlertFetchState = {
+  lastAttemptAt: null,
+  lastSuccessAt: null,
+  sourceUrl: null,
+  httpStatus: null,
+  error: null,
+};
+let historySyncState = {
+  lastAttemptAt: null,
+  lastSuccessAt: null,
+  sourceUrl: null,
+  httpStatus: null,
+  addedCount: 0,
+  error: null,
+};
 
 const colors = {
   reset: "\x1b[0m",
@@ -109,6 +133,81 @@ function nowStr() {
   return new Date().toLocaleString("he-IL", {
     timeZone: OREF_TIMEZONE,
   });
+}
+
+function buildOrefFetchHeaders() {
+  return {
+    "User-Agent": "Mozilla/5.0",
+    Accept: "application/json",
+    Referer: "https://www.oref.org.il/",
+    "X-Requested-With": "XMLHttpRequest",
+    Connection: "keep-alive",
+  };
+}
+
+async function fetchJsonFromSourceList(urls) {
+  const failures = [];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: buildOrefFetchHeaders(),
+      });
+
+      if (!res.ok) {
+        failures.push({
+          url,
+          status: res.status,
+          reason: "http-not-ok",
+        });
+        continue;
+      }
+
+      const text = (await res.text()).replace(/^\uFEFF/, "").trim();
+      if (!text || text.length < 2) {
+        failures.push({
+          url,
+          status: res.status,
+          reason: "empty-body",
+        });
+        continue;
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        failures.push({
+          url,
+          status: res.status,
+          reason: "invalid-json",
+        });
+        continue;
+      }
+
+      return {
+        ok: true,
+        url,
+        status: res.status,
+        data: parsed,
+        failures,
+      };
+    } catch (error) {
+      failures.push({
+        url,
+        status: null,
+        reason: error?.message || "network-error",
+      });
+    }
+  }
+
+  return {
+    ok: false,
+    failures,
+    data: null,
+    status: null,
+    url: null,
+  };
 }
 
 function sanitizeFileBaseName(fileName) {
@@ -512,30 +611,25 @@ function mergeOfficialHistoryItems(items) {
 async function syncHistoryFromOfficialFeed() {
   if (historySyncInProgress) return 0;
   historySyncInProgress = true;
+  historySyncState.lastAttemptAt = new Date().toISOString();
+  historySyncState.error = null;
+  historySyncState.addedCount = 0;
 
   try {
-    const response = await fetch(ALERT_HISTORY_SOURCE_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "application/json",
-        Referer: "https://www.oref.org.il/",
-        "X-Requested-With": "XMLHttpRequest",
-        Connection: "keep-alive",
-      },
-    });
+    const fetched = await fetchJsonFromSourceList(ALERT_HISTORY_SOURCE_URLS);
 
-    if (!response.ok) return 0;
-
-    const text = (await response.text()).replace(/^\uFEFF/, "").trim();
-    if (!text || text.length < 2) return 0;
-
-    let rawItems;
-    try {
-      rawItems = JSON.parse(text);
-    } catch {
+    if (!fetched.ok) {
+      const failureSummary = fetched.failures
+        .map((item) => `${item.url} (${item.status ?? "n/a"}:${item.reason})`)
+        .join(" | ");
+      historySyncState.error = `history-source-unavailable: ${failureSummary}`;
       return 0;
     }
 
+    historySyncState.sourceUrl = fetched.url;
+    historySyncState.httpStatus = fetched.status;
+
+    const rawItems = fetched.data;
     if (!Array.isArray(rawItems) || rawItems.length === 0) return 0;
 
     const lookbackMs = OFFICIAL_HISTORY_LOOKBACK_HOURS * 60 * 60 * 1000;
@@ -549,11 +643,29 @@ async function syncHistoryFromOfficialFeed() {
         return Number.isFinite(ts) && ts >= minTs;
       });
 
-    return mergeOfficialHistoryItems(normalized);
-  } catch {
+    const added = mergeOfficialHistoryItems(normalized);
+    historySyncState.lastSuccessAt = new Date().toISOString();
+    historySyncState.addedCount = added;
+    return added;
+  } catch (error) {
+    historySyncState.error = error?.message || "history-sync-failed";
     return 0;
   } finally {
     historySyncInProgress = false;
+  }
+}
+
+function logHistorySyncState() {
+  if (historySyncState.error) {
+    printLine(`שגיאת סנכרון היסטוריה: ${historySyncState.error}`, colors.yellow);
+    return;
+  }
+
+  if (historySyncState.sourceUrl) {
+    printLine(
+      `סנכרון היסטוריה פעיל (${historySyncState.addedCount} נוספו)`,
+      colors.dim
+    );
   }
 }
 
@@ -814,35 +926,30 @@ function scheduleNextFetch() {
 }
 
 async function fetchAlerts() {
+  lastAlertFetchState.lastAttemptAt = new Date().toISOString();
+  lastAlertFetchState.error = null;
+
   try {
-    const res = await fetch(ALERT_SOURCE_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "application/json",
-        Referer: "https://www.oref.org.il/",
-        Connection: "keep-alive",
-      },
-    });
+    const fetched = await fetchJsonFromSourceList(ALERT_SOURCE_URLS);
 
-    if (!res.ok) {
+    if (!fetched.ok) {
+      const hasAnyNonEmptyFailure = fetched.failures.some(
+        (failure) => failure.reason !== "empty-body"
+      );
+      if (hasAnyNonEmptyFailure) {
+        lastAlertFetchState.error = fetched.failures
+          .map((item) => `${item.url} (${item.status ?? "n/a"}:${item.reason})`)
+          .join(" | ");
+      }
       scheduleNextFetch();
       return;
     }
 
-    const text = (await res.text()).replace(/^\uFEFF/, "");
-    if (!text || text.length < 5) {
-      scheduleNextFetch();
-      return;
-    }
+    lastAlertFetchState.sourceUrl = fetched.url;
+    lastAlertFetchState.httpStatus = fetched.status;
+    lastAlertFetchState.lastSuccessAt = new Date().toISOString();
 
-    let raw;
-
-    try {
-      raw = JSON.parse(text);
-    } catch {
-      scheduleNextFetch();
-      return;
-    }
+    const raw = fetched.data;
 
     if (!raw || !Array.isArray(raw.data) || raw.data.length === 0) {
       scheduleNextFetch();
@@ -871,7 +978,9 @@ async function fetchAlerts() {
     }
 
     publishAlert(enriched);
-  } catch {}
+  } catch (error) {
+    lastAlertFetchState.error = error?.message || "alert-fetch-failed";
+  }
 
   scheduleNextFetch();
 }
@@ -893,6 +1002,16 @@ app.get("/api/last-alert", (req, res) => {
 app.get("/api/history", (req, res) => {
   const filter = buildHistoryFilter(req.query ?? {});
   res.json(getFilteredHistory(filter));
+});
+
+app.get("/api/system-status", (req, res) => {
+  res.json({
+    now: new Date().toISOString(),
+    historyCount: history.length,
+    lastAlertObject,
+    lastAlertFetchState,
+    historySyncState,
+  });
 });
 
 app.get("/api/sounds", async (req, res) => {
@@ -1024,10 +1143,15 @@ wss.on("connection", (socket) => {
 await initializeSettings();
 await initializeHistory();
 await syncHistoryFromOfficialFeed();
+logHistorySyncState();
 
 setInterval(printHeartbeat, 60000);
 setInterval(() => {
-  syncHistoryFromOfficialFeed().catch(() => {});
+  syncHistoryFromOfficialFeed()
+    .then(() => {
+      logHistorySyncState();
+    })
+    .catch(() => {});
 }, OFFICIAL_HISTORY_REFRESH_MS);
 
 server.listen(PORT, () => {

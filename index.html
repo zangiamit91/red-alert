@@ -271,8 +271,13 @@
 
     .rule-actions {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(150px, 1fr) auto auto;
       gap: 8px;
+      align-items: center;
+    }
+
+    .rule-actions button {
+      white-space: nowrap;
     }
 
     .alert-item {
@@ -354,7 +359,8 @@
       .history-grid,
       .history-actions,
       .control-row,
-      .upload-row {
+      .upload-row,
+      .rule-actions {
         grid-template-columns: 1fr;
       }
 
@@ -528,6 +534,7 @@
       fromIso: "",
       toIso: "",
     };
+    const HISTORY_AUTO_REFRESH_MS = 60 * 1000;
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
@@ -728,7 +735,7 @@
     }
 
     async function playSoundNow(soundFile) {
-      if (!soundFile) return;
+      if (!soundFile) return false;
       try {
         audioEl.src = encodeFilePath(soundFile);
         audioEl.volume = 1;
@@ -736,10 +743,12 @@
         audioEl.currentTime = 0;
         await audioEl.play();
         soundEnabled = true;
-        enableSoundBtn.textContent = "סאונד פעיל";
+        enableSoundBtn.textContent = "סאונד פעיל ✓";
+        return true;
       } catch (error) {
         console.error("manual sound failed", error);
         setStatus("הדפדפן חסם סאונד. לחץ 'הפעלת סאונד' ואז נסה שוב", "var(--danger)");
+        return false;
       }
     }
 
@@ -749,7 +758,9 @@
         : [];
 
       const immediateSound = resolveMappedSoundForAreas(testAreas);
-      const previewPromise = playSoundNow(immediateSound);
+      const previewPlayed = immediateSound
+        ? await playSoundNow(immediateSound)
+        : false;
 
       const payload = await fetchJSON("/api/test-alert", {
         method: "POST",
@@ -767,8 +778,7 @@
           ? payload.soundFile
           : resolveMappedSoundForAreas(targetAreas);
 
-      await previewPromise;
-      if (!immediateSound && soundFile) {
+      if (!previewPlayed && soundFile) {
         await playSoundNow(soundFile);
       }
       return payload;
@@ -919,6 +929,36 @@
           await saveSettings();
         });
         actions.appendChild(select);
+
+        const testBtn = document.createElement("button");
+        testBtn.className = "secondary";
+        testBtn.textContent = "בדיקת עיר";
+        testBtn.addEventListener("click", async () => {
+          try {
+            await sendTestAlertForAreas([cityName]);
+            setStatus(`נשלחה בדיקה ל-${cityName}`, "var(--ok)");
+          } catch (error) {
+            setStatus(`בדיקה נכשלה עבור ${cityName}`, "var(--danger)");
+            console.error(error);
+          }
+        });
+        actions.appendChild(testBtn);
+
+        const previewBtn = document.createElement("button");
+        previewBtn.className = "secondary";
+        previewBtn.textContent = "נגן צליל";
+        previewBtn.addEventListener("click", async () => {
+          const mappedSound = getCityMappedSound(cityName) || settings.defaultSound;
+          if (!mappedSound) {
+            setStatus("אין צליל מוגדר לעיר זו", "var(--danger)");
+            return;
+          }
+          const played = await playSoundNow(mappedSound);
+          if (played) {
+            setStatus(`צליל הופעל עבור ${cityName}`, "var(--ok)");
+          }
+        });
+        actions.appendChild(previewBtn);
 
         row.appendChild(header);
         row.appendChild(actions);
@@ -1188,17 +1228,24 @@
 
     enableSoundBtn.addEventListener("click", async () => {
       try {
-        if (settings.defaultSound) {
-          audioEl.src = encodeFilePath(settings.defaultSound);
-          audioEl.volume = 1;
-          await audioEl.play();
-          audioEl.pause();
-          audioEl.currentTime = 0;
+        const soundToActivate = settings.defaultSound || sounds[0] || "";
+        if (soundToActivate) {
+          const played = await playSoundNow(soundToActivate);
+          if (played) {
+            audioEl.pause();
+            audioEl.currentTime = 0;
+            setStatus(`סאונד הופעל בהצלחה (${soundToActivate})`, "var(--ok)");
+          } else {
+            return;
+          }
+        } else {
+          soundEnabled = true;
+          enableSoundBtn.textContent = "סאונד פעיל ✓";
+          setStatus("אין קובץ צליל זמין כרגע, אבל הרשאת סאונד הופעלה", "var(--muted)");
         }
-        soundEnabled = true;
-        enableSoundBtn.textContent = "סאונד פעיל";
       } catch (e) {
         console.error(e);
+        setStatus("לא ניתן להפעיל סאונד בדפדפן כרגע", "var(--danger)");
       }
     });
 
@@ -1315,6 +1362,18 @@
       const data = await fetchJSON(`/api/history?${params.toString()}`);
       historyItems = Array.isArray(data) ? data : [];
 
+      if (!historyItems.length) {
+        try {
+          const sys = await fetchJSON("/api/system-status");
+          const historyError = sys?.historySyncState?.error;
+          if (historyError) {
+            setStatus("היסטוריה זמנית לא זמינה ממקור פיקוד העורף בשרת", "var(--danger)");
+          }
+        } catch (error) {
+          console.error("system status check failed", error);
+        }
+      }
+
       historyItems.forEach((item) => {
         getHistoryAreas(item).forEach((area) => {
           dynamicAreaSuggestions.add(area);
@@ -1413,6 +1472,9 @@
         syncHistoryCustomVisibility();
         applyPresetToDateInputs("24h");
         await loadHistory();
+        setInterval(() => {
+          loadHistory().catch((err) => console.error("history periodic refresh failed", err));
+        }, HISTORY_AUTO_REFRESH_MS);
         refreshMapLayout();
         setStatus("אפשר להתחיל להגדיר ערים וסאונד");
       } catch (err) {
