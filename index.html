@@ -672,6 +672,13 @@
         </div>
 
         <div class="control-group">
+          <label class="upload-check" for="includePreAlertsCheck">
+            <input id="includePreAlertsCheck" type="checkbox" checked />
+            קבל גם התראה מקדימה לפני אזעקה
+          </label>
+        </div>
+
+        <div class="control-group">
           <label for="cityInput">עיר / אזור למעקב</label>
           <input id="cityInput" type="text" list="citySuggestions" placeholder="לדוגמה: תל אביב, ירושלים, אשדוד" />
           <datalist id="citySuggestions"></datalist>
@@ -765,6 +772,7 @@
     const saveAdminKeyBtn = document.getElementById("saveAdminKeyBtn");
     const clearAdminKeyBtn = document.getElementById("clearAdminKeyBtn");
     const defaultSoundSelect = document.getElementById("defaultSoundSelect");
+    const includePreAlertsCheck = document.getElementById("includePreAlertsCheck");
     const cityInput = document.getElementById("cityInput");
     const citySuggestionsEl = document.getElementById("citySuggestions");
     const cityQuickSelect = document.getElementById("cityQuickSelect");
@@ -813,6 +821,7 @@
       trackedAreas: [],
       areaSoundMap: {},
       defaultSound: "",
+      includePreAlerts: true,
     };
     let adminProtectionEnabled = false;
     let adminKey = localStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
@@ -1301,6 +1310,7 @@
     function renderSettings() {
       fillSoundSelect(defaultSoundSelect, settings.defaultSound, false);
       fillSoundSelect(citySoundSelect, "", true);
+      includePreAlertsCheck.checked = settings.includePreAlerts !== false;
       renderRulesList();
       refreshCitySuggestions();
     }
@@ -1385,6 +1395,17 @@
     defaultSoundSelect.addEventListener("change", async () => {
       settings.defaultSound = defaultSoundSelect.value;
       await saveSettings();
+    });
+
+    includePreAlertsCheck.addEventListener("change", async () => {
+      settings.includePreAlerts = includePreAlertsCheck.checked;
+      await saveSettings();
+      setStatus(
+        includePreAlertsCheck.checked
+          ? "התראה מקדימה הופעלה"
+          : "התראה מקדימה כובתה",
+        "var(--ok)"
+      );
     });
 
     saveAdminKeyBtn.addEventListener("click", () => {

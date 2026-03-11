@@ -38,6 +38,7 @@ const ALERT_HISTORY_SOURCE_URLS = [
 const ALLOWED_SOUND_EXTENSIONS = [".mp3", ".wav", ".aiff", ".aif", ".m4a"];
 const SOUND_EXTENSIONS = new Set(ALLOWED_SOUND_EXTENSIONS);
 const NON_SIREN_TEXT_MARKERS = ["האירוע הסתיים", "מוקדמת", "תרגיל"];
+const PRE_ALERT_TEXT_MARKERS = ["מוקדמת", "התראה מקדימה", "שהייה בסמיכות למרחב מוגן"];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,6 +54,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   trackedAreas: [],
   areaSoundMap: {},
   defaultSound: DEFAULT_SOUND,
+  includePreAlerts: true,
 });
 
 let availableSounds = [];
@@ -60,6 +62,7 @@ let settings = {
   trackedAreas: [],
   areaSoundMap: {},
   defaultSound: DEFAULT_SOUND,
+  includePreAlerts: true,
 };
 
 let lastAlertSignature = null;
@@ -142,6 +145,7 @@ function cloneDefaultSettings() {
     trackedAreas: [],
     areaSoundMap: {},
     defaultSound: DEFAULT_SETTINGS.defaultSound,
+    includePreAlerts: DEFAULT_SETTINGS.includePreAlerts,
   };
 }
 
@@ -352,6 +356,13 @@ function hasNonSirenMarker(text) {
   );
 }
 
+function hasPreAlertMarker(text) {
+  const normalized = normalizeText(text);
+  return PRE_ALERT_TEXT_MARKERS.some((marker) =>
+    normalized.includes(normalizeText(marker))
+  );
+}
+
 function isRawSirenAlert(raw) {
   const category = Number(raw?.cat ?? 0);
   if (category !== 1) return false;
@@ -360,6 +371,15 @@ function isRawSirenAlert(raw) {
   const desc = String(raw?.desc ?? "");
 
   return !hasNonSirenMarker(`${title} ${desc}`);
+}
+
+function isRawPreAlert(raw) {
+  const category = Number(raw?.cat ?? 0);
+  if (category !== 1) return false;
+
+  const title = String(raw?.title ?? "");
+  const desc = String(raw?.desc ?? "");
+  return hasPreAlertMarker(`${title} ${desc}`);
 }
 
 function buildSignature(alert) {
@@ -395,6 +415,8 @@ function normalizeAlert(raw) {
   const desc = String(raw?.desc ?? "");
   const rawIsSiren =
     typeof raw?.isSiren === "boolean" ? raw.isSiren : isRawSirenAlert(raw);
+  const rawIsPreAlert =
+    typeof raw?.isPreAlert === "boolean" ? raw.isPreAlert : isRawPreAlert(raw);
 
   return {
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -405,6 +427,7 @@ function normalizeAlert(raw) {
     categoryName: resolveCategoryName(raw),
     receivedAt: new Date().toISOString(),
     isSiren: rawIsSiren,
+    isPreAlert: rawIsPreAlert,
   };
 }
 
@@ -412,6 +435,7 @@ function getCategoryColor(alert) {
   const category = Number(alert?.category ?? 0);
 
   if (category === 10) return colors.green;
+  if (alert?.isPreAlert) return colors.yellow;
 
   switch (category) {
     case 1:
@@ -501,6 +525,10 @@ function sanitizeHistory(input) {
         typeof item.isSiren === "boolean"
           ? item.isSiren
           : category === 1 && !hasNonSirenMarker(`${title} ${desc}`),
+      isPreAlert:
+        typeof item.isPreAlert === "boolean"
+          ? item.isPreAlert
+          : category === 1 && hasPreAlertMarker(`${title} ${desc}`),
     });
   }
 
@@ -856,6 +884,8 @@ function sanitizeSettings(input, sounds) {
     clean.defaultSound = sounds[0] ?? "";
   }
 
+  clean.includePreAlerts = source.includePreAlerts !== false;
+
   return clean;
 }
 
@@ -933,6 +963,11 @@ function enrichAlert(alert) {
         ? alert.isSiren
         : Number(alert.category ?? 0) === 1 &&
           !hasNonSirenMarker(`${alert.title ?? ""} ${alert.desc ?? ""}`),
+    isPreAlert:
+      typeof alert.isPreAlert === "boolean"
+        ? alert.isPreAlert
+        : Number(alert.category ?? 0) === 1 &&
+          hasPreAlertMarker(`${alert.title ?? ""} ${alert.desc ?? ""}`),
   };
 }
 
@@ -962,6 +997,10 @@ function printAlert(alert) {
   printLine(`תיאור: ${alert.desc || "ללא תיאור"}`, colors.white);
   printLine(`קטגוריה: ${alert.category}`, categoryColor);
   printLine(`סוג קטגוריה: ${alert.categoryName}`, categoryColor);
+  printLine(
+    `סוג אירוע: ${alert.isPreAlert ? "התראה מקדימה" : alert.isSiren ? "אזעקה" : "התרעה"}`,
+    categoryColor
+  );
   printLine(`יישובים (${shownAreas.length}):`, colors.magenta);
 
   shownAreas.forEach((city) => {
@@ -1053,13 +1092,15 @@ async function fetchAlerts() {
 
     lastAlertSignature = signature;
 
-    if (!isRawSirenAlert(raw)) {
+    const normalized = normalizeAlert(raw);
+    const enriched = enrichAlert(normalized);
+    const shouldProcessAlert =
+      enriched.isSiren || (enriched.isPreAlert && settings.includePreAlerts);
+
+    if (!shouldProcessAlert) {
       scheduleNextFetch();
       return;
     }
-
-    const normalized = normalizeAlert(raw);
-    const enriched = enrichAlert(normalized);
 
     if (!enriched.shouldNotify) {
       scheduleNextFetch();
