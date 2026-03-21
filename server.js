@@ -1,7 +1,7 @@
 import express from "express";
 import http from "http";
 import cors from "cors";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
@@ -17,6 +17,16 @@ const wss = new WebSocketServer({ server });
 const PORT = Number(process.env.PORT || 3000);
 const SERVER_AUDIO_ENABLED = process.env.SERVER_AUDIO_ENABLED === "true";
 const ADMIN_KEY = String(process.env.ADMIN_KEY || "").trim();
+const DEFAULT_PUBLIC_SHARE_URL = "https://red-alert-o5nd.onrender.com";
+const PUBLIC_SHARE_URL = String(
+  process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || DEFAULT_PUBLIC_SHARE_URL
+)
+  .trim()
+  .replace(/\/+$/, "");
+const REPO_URL = String(
+  process.env.PUBLIC_REPO_URL || "https://github.com/zangiamit91/red-alert"
+)
+  .trim();
 const MAX_HISTORY_ITEMS = 2000;
 const SOUND_UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
 const OFFICIAL_HISTORY_LOOKBACK_HOURS = 48;
@@ -86,6 +96,7 @@ let historySyncState = {
 };
 let orefCookieHeader = "";
 let orefCookieFetchedAt = 0;
+const SERVER_STARTED_AT = new Date().toISOString();
 
 const colors = {
   reset: "\x1b[0m",
@@ -122,6 +133,34 @@ function extractAdminKeyFromRequest(req) {
 
   return "";
 }
+
+function resolveBuildVersion() {
+  const envBuildVersion = [
+    process.env.RENDER_GIT_COMMIT,
+    process.env.GIT_COMMIT,
+    process.env.COMMIT_SHA,
+    process.env.VERCEL_GIT_COMMIT_SHA,
+  ]
+    .map((value) => String(value || "").trim())
+    .find(Boolean);
+
+  if (envBuildVersion) {
+    return envBuildVersion.slice(0, 7);
+  }
+
+  try {
+    const result = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
+      cwd: __dirname,
+      encoding: "utf8",
+    });
+    const stdout = String(result.stdout || "").trim();
+    if (stdout) return stdout;
+  } catch {}
+
+  return "local";
+}
+
+const BUILD_VERSION = resolveBuildVersion();
 
 function isAdminAuthorized(req) {
   if (!ADMIN_KEY) return true;
@@ -1122,7 +1161,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    buildVersion: BUILD_VERSION,
+    startedAt: SERVER_STARTED_AT,
+  });
 });
 
 app.get("/api/last-alert", (req, res) => {
@@ -1137,6 +1180,10 @@ app.get("/api/history", (req, res) => {
 app.get("/api/system-status", (req, res) => {
   res.json({
     now: new Date().toISOString(),
+    buildVersion: BUILD_VERSION,
+    repoUrl: REPO_URL,
+    publicShareUrl: PUBLIC_SHARE_URL,
+    startedAt: SERVER_STARTED_AT,
     historyCount: history.length,
     lastAlertObject,
     orefCookie: {
@@ -1156,6 +1203,10 @@ app.get("/api/sounds", async (req, res) => {
 app.get("/api/app-config", (req, res) => {
   res.json({
     adminProtectionEnabled: Boolean(ADMIN_KEY),
+    buildVersion: BUILD_VERSION,
+    repoUrl: REPO_URL,
+    publicShareUrl: PUBLIC_SHARE_URL,
+    startedAt: SERVER_STARTED_AT,
   });
 });
 

@@ -33,3 +33,19 @@ process.stdin.on("end",()=>{
   }
 });
 '
+
+echo "- /api/app-config"
+curl -sS "$BASE_URL/api/app-config" | node -e '
+let d="";
+process.stdin.on("data",c=>d+=c);
+process.stdin.on("end",()=>{
+  try {
+    const j=JSON.parse(d);
+    console.log("buildVersion="+(j.buildVersion||""));
+    console.log("publicShareUrl="+(j.publicShareUrl||""));
+    console.log("repoUrl="+(j.repoUrl||""));
+  } catch {
+    console.log("appConfig=unavailable");
+  }
+});
+'

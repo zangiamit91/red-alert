@@ -10,3 +10,7 @@ services:
         value: 22
       - key: SERVER_AUDIO_ENABLED
         value: "false"
+      - key: PUBLIC_BASE_URL
+        value: "https://red-alert-o5nd.onrender.com"
+      - key: PUBLIC_REPO_URL
+        value: "https://github.com/zangiamit91/red-alert"

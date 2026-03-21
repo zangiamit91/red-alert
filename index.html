@@ -158,6 +158,16 @@
       z-index: 80;
     }
 
+    #banner.pre-alert {
+      background: linear-gradient(120deg, #d97706, #92400e);
+      border-color: #f59e0b;
+    }
+
+    #banner.siren {
+      background: linear-gradient(120deg, #b91c1c, #7f1d1d);
+      border-color: #dc2626;
+    }
+
     #bannerContent {
       display: grid;
       gap: 3px;
@@ -304,6 +314,91 @@
       grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
+    .with-action-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .triple-row {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .share-card {
+      padding-bottom: 9px;
+    }
+
+    .share-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .share-head h3 {
+      margin-bottom: 0;
+    }
+
+    .share-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+
+    .share-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .share-meta a {
+      color: #7dd3fc;
+      text-decoration: none;
+      font-size: 10.5px;
+    }
+
+    .share-meta a:hover {
+      text-decoration: underline;
+    }
+
+    .inline-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 211, 252, 0.3);
+      background: rgba(8, 47, 73, 0.45);
+      color: #bae6fd;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .sound-note {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .map-alert-marker {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 0 5px rgba(15, 23, 42, 0.18);
+    }
+
+    .map-alert-marker.siren {
+      background: #ef4444;
+      box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.2);
+    }
+
+    .map-alert-marker.pre-alert {
+      background: #f59e0b;
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.18);
+    }
+
     .upload-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -415,6 +510,11 @@
       font-size: 12px;
     }
 
+    #shareLinkInput {
+      direction: ltr;
+      text-align: left;
+    }
+
     #settingsStatus {
       min-height: 16px;
       color: var(--muted);
@@ -448,6 +548,12 @@
       font-weight: 700;
       font-size: 13.5px;
       line-height: 1.2;
+    }
+
+    .rule-sound {
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 5px;
     }
 
     .danger {
@@ -601,7 +707,10 @@
       .history-actions,
       .control-row,
       .upload-row,
-      .admin-row {
+      .admin-row,
+      .with-action-row,
+      .triple-row,
+      .share-row {
         grid-template-columns: 1fr;
       }
 
@@ -649,6 +758,21 @@
         <button id="showHistoryTabBtn" class="secondary tab-btn">היסטוריה</button>
       </div>
 
+      <section class="card share-card">
+        <div class="share-head">
+          <h3>קישור לשיתוף</h3>
+          <span id="buildBadge" class="inline-pill">build -</span>
+        </div>
+        <div class="share-row">
+          <input id="shareLinkInput" type="text" readonly value="טוען קישור..." />
+          <button id="copyShareLinkBtn" class="secondary">העתק</button>
+        </div>
+        <div class="share-meta">
+          <a id="repoLink" href="https://github.com/zangiamit91/red-alert" target="_blank" rel="noreferrer">GitHub</a>
+          <div id="shareStatusText" class="muted">טוען פרטי שיתוף...</div>
+        </div>
+      </section>
+
       <section id="settingsCard" class="card">
         <h3>הגדרות אזורים וסאונד</h3>
         <p class="hint">
@@ -668,7 +792,11 @@
 
         <div class="control-group">
           <label for="defaultSoundSelect">צליל ברירת מחדל</label>
-          <select id="defaultSoundSelect"></select>
+          <div class="control-row with-action-row">
+            <select id="defaultSoundSelect"></select>
+            <button id="previewDefaultSoundBtn" class="secondary">נגן</button>
+          </div>
+          <div class="sound-note">אפשר להשמיע צליל לפני ששומרים.</div>
         </div>
 
         <div class="control-group">
@@ -699,8 +827,9 @@
 
         <div class="control-group">
           <label for="citySoundSelect">צליל לעיר / אזור</label>
-          <div class="control-row">
+          <div class="control-row triple-row">
             <select id="citySoundSelect"></select>
+            <button id="previewCitySoundBtn" class="secondary">נגן</button>
             <button id="addRuleBtn">+ הוסף עיר/אזור</button>
           </div>
         </div>
@@ -797,6 +926,13 @@
     const showHistoryTabBtn = document.getElementById("showHistoryTabBtn");
     const settingsCard = document.getElementById("settingsCard");
     const historyCard = document.getElementById("historyCard");
+    const shareLinkInput = document.getElementById("shareLinkInput");
+    const copyShareLinkBtn = document.getElementById("copyShareLinkBtn");
+    const buildBadge = document.getElementById("buildBadge");
+    const shareStatusText = document.getElementById("shareStatusText");
+    const repoLink = document.getElementById("repoLink");
+    const previewDefaultSoundBtn = document.getElementById("previewDefaultSoundBtn");
+    const previewCitySoundBtn = document.getElementById("previewCitySoundBtn");
 
     let soundEnabled = false;
     let markers = [];
@@ -817,6 +953,18 @@
     const SYSTEM_STATUS_REFRESH_MS = 30 * 1000;
     const HISTORY_RESULT_LIMIT = 2000;
     const ADMIN_KEY_STORAGE_KEY = "red_alert_admin_key";
+    const SOUND_LABELS = {
+      "315618__modularsamples__yamaha-cs-30l-whoopie-bass-c5-whoopie-bass-72-127.aiff": "Whoopie Bass",
+      "847382__timothy_aseev__eerie-horror-nature-atmosphere-sfx.wav": "Eerie Atmosphere",
+      "calm_pulse.wav": "פולס רגוע",
+      "gentle_bell.wav": "פעמון עדין",
+      "megadeth.mp3": "Megadeth",
+      "pantera.mp3": "Pantera",
+      "sepultura.mp3": "Sepultura",
+      "slayer.mp3": "Slayer",
+      "soft_glow.wav": "צליל רך",
+      "warm_chime.wav": "פעמון חם",
+    };
     let settings = {
       trackedAreas: [],
       areaSoundMap: {},
@@ -825,12 +973,76 @@
     };
     let adminProtectionEnabled = false;
     let adminKey = localStorage.getItem(ADMIN_KEY_STORAGE_KEY) || "";
+    let publicShareUrl = "";
+    let repoUrl = repoLink.href;
+    let buildVersion = "-";
 
     const map = L.map("map").setView([31.7683, 35.2137], 7);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
+
+    const alertMarkerIcons = {
+      siren: L.divIcon({
+        className: "",
+        html: '<div class="map-alert-marker siren"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+        popupAnchor: [0, -8],
+      }),
+      preAlert: L.divIcon({
+        className: "",
+        html: '<div class="map-alert-marker pre-alert"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+        popupAnchor: [0, -8],
+      }),
+    };
+
+    function normalizeUrl(url) {
+      return String(url || "").trim().replace(/\/+$/, "");
+    }
+
+    function getSoundDisplayName(soundName) {
+      const cleanName = String(soundName || "").trim();
+      if (!cleanName) return "";
+      if (SOUND_LABELS[cleanName]) {
+        return SOUND_LABELS[cleanName];
+      }
+
+      const baseName = cleanName.replace(/\.[^.]+$/, "");
+      const withoutTimestamp = baseName.replace(/_\d{10,}$/, "");
+      const humanized = withoutTimestamp
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return humanized || cleanName;
+    }
+
+    function updateShareCard() {
+      const normalizedPublicUrl = normalizeUrl(publicShareUrl);
+      const normalizedCurrentOrigin = normalizeUrl(location.origin);
+      const activeShareUrl = normalizedPublicUrl || normalizedCurrentOrigin;
+
+      shareLinkInput.value = activeShareUrl || "";
+      buildBadge.textContent = `build ${buildVersion || "-"}`;
+      repoLink.href = repoUrl;
+
+      if (!activeShareUrl) {
+        shareStatusText.textContent = "לא הוגדר קישור שיתוף ציבורי.";
+        return;
+      }
+
+      if (normalizedCurrentOrigin === normalizedPublicUrl) {
+        shareStatusText.textContent = "אתה כרגע על השרת הציבורי.";
+      } else if (normalizedPublicUrl) {
+        shareStatusText.textContent = "זה הקישור הכללי שאפשר לשלוח לאנשים.";
+      } else {
+        shareStatusText.textContent = "כרגע מוצג הקישור של השרת המקומי.";
+      }
+    }
 
     function refreshMapLayout() {
       setTimeout(() => {
@@ -926,6 +1138,9 @@
       try {
         const config = await fetchJSON("/api/app-config");
         adminProtectionEnabled = Boolean(config?.adminProtectionEnabled);
+        publicShareUrl = String(config?.publicShareUrl || "").trim();
+        repoUrl = String(config?.repoUrl || repoUrl).trim();
+        buildVersion = String(config?.buildVersion || buildVersion).trim();
       } catch {
         adminProtectionEnabled = false;
       }
@@ -936,6 +1151,8 @@
       } else {
         adminKeyInput.value = "";
       }
+
+      updateShareCard();
     }
 
     function setSourceStatus(text, color = "var(--muted)", title = "") {
@@ -1215,7 +1432,8 @@
       sounds.forEach((soundName) => {
         const opt = document.createElement("option");
         opt.value = soundName;
-        opt.textContent = soundName;
+        opt.textContent = getSoundDisplayName(soundName);
+        opt.title = soundName;
         if (soundName === selected) {
           opt.selected = true;
         }
@@ -1241,6 +1459,7 @@
       settings.trackedAreas.forEach((cityName) => {
         const row = document.createElement("div");
         row.className = "rule-item";
+        const mappedSound = getCityMappedSound(cityName) || settings.defaultSound || "";
 
         const header = document.createElement("div");
         header.className = "rule-header";
@@ -1259,6 +1478,12 @@
 
         header.appendChild(city);
         header.appendChild(removeBtn);
+
+        const soundMeta = document.createElement("div");
+        soundMeta.className = "rule-sound";
+        soundMeta.textContent = mappedSound
+          ? `צליל: ${getSoundDisplayName(mappedSound)}`
+          : "צליל: ללא";
 
         const actions = document.createElement("div");
         actions.className = "rule-actions";
@@ -1296,12 +1521,16 @@
           }
           const played = await playSoundNow(mappedSound);
           if (played) {
-            setStatus(`צליל הופעל עבור ${cityName}`, "var(--ok)");
+            setStatus(
+              `נוגן עבור ${cityName}: ${getSoundDisplayName(mappedSound)}`,
+              "var(--ok)"
+            );
           }
         });
         actions.appendChild(previewBtn);
 
         row.appendChild(header);
+        row.appendChild(soundMeta);
         row.appendChild(actions);
         rulesList.appendChild(row);
       });
@@ -1395,6 +1624,55 @@
     defaultSoundSelect.addEventListener("change", async () => {
       settings.defaultSound = defaultSoundSelect.value;
       await saveSettings();
+    });
+
+    previewDefaultSoundBtn.addEventListener("click", async () => {
+      const selectedSound = defaultSoundSelect.value || settings.defaultSound;
+      if (!selectedSound) {
+        setStatus("אין צליל ברירת מחדל לניגון", "var(--danger)");
+        return;
+      }
+
+      const played = await playSoundNow(selectedSound);
+      if (played) {
+        setStatus(`נוגן: ${getSoundDisplayName(selectedSound)}`, "var(--ok)");
+      }
+    });
+
+    previewCitySoundBtn.addEventListener("click", async () => {
+      const selectedSound = citySoundSelect.value || settings.defaultSound;
+      if (!selectedSound) {
+        setStatus("אין צליל לניגון", "var(--danger)");
+        return;
+      }
+
+      const played = await playSoundNow(selectedSound);
+      if (played) {
+        setStatus(`נוגן: ${getSoundDisplayName(selectedSound)}`, "var(--ok)");
+      }
+    });
+
+    copyShareLinkBtn.addEventListener("click", async () => {
+      const shareUrl = shareLinkInput.value.trim();
+      if (!shareUrl) {
+        setStatus("אין קישור זמין להעתקה", "var(--danger)");
+        return;
+      }
+
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+        } else {
+          shareLinkInput.focus();
+          shareLinkInput.select();
+          document.execCommand("copy");
+        }
+        setStatus("הקישור הועתק", "var(--ok)");
+      } catch (error) {
+        shareLinkInput.focus();
+        shareLinkInput.select();
+        setStatus("לא הצלחתי להעתיק אוטומטית. הקישור מסומן", "var(--muted)");
+      }
     });
 
     includePreAlertsCheck.addEventListener("change", async () => {
@@ -1613,7 +1891,10 @@
           if (played) {
             audioEl.pause();
             audioEl.currentTime = 0;
-            setStatus(`סאונד הופעל בהצלחה (${soundToActivate})`, "var(--ok)");
+            setStatus(
+              `סאונד הופעל בהצלחה (${getSoundDisplayName(soundToActivate)})`,
+              "var(--ok)"
+            );
           } else {
             return;
           }
@@ -1659,15 +1940,18 @@
       return key ? cityCoords[key] : null;
     }
 
-    function plotAreas(areas) {
+    function plotAreas(areas, alert) {
       clearMarkers();
 
       const points = [];
+      const markerIcon = alert?.isPreAlert
+        ? alertMarkerIcons.preAlert
+        : alertMarkerIcons.siren;
       areas.forEach((area) => {
         const coords = resolveCoords(area);
         if (!coords) return;
 
-        const marker = L.marker(coords).addTo(map).bindPopup(area);
+        const marker = L.marker(coords, { icon: markerIcon }).addTo(map).bindPopup(area);
         markers.push(marker);
         points.push(coords);
       });
@@ -1693,10 +1977,13 @@
         shownAreas.length > 0
           ? `${shownAreas.join(", ")}${moreCount > 0 ? ` ועוד ${moreCount}` : ""}`
           : "ללא יישובים";
+      const eventLabel = alert?.isPreAlert ? "התראה מקדימה" : "אזעקה";
 
+      bannerEl.classList.remove("pre-alert", "siren");
+      bannerEl.classList.add(alert?.isPreAlert ? "pre-alert" : "siren");
       bannerEl.style.display = "block";
       bannerContentEl.innerHTML = `
-        <strong>${alert.title}</strong>
+        <strong>${eventLabel}: ${alert.title}</strong>
         <div class="areas">${areasText}</div>
         <div class="time">${new Date(alert.receivedAt).toLocaleString("he-IL")}</div>
       `;
@@ -1841,7 +2128,7 @@
       if (!areas.length) return;
 
       renderBanner(alert, areas);
-      plotAreas(areas);
+      plotAreas(areas, alert);
 
       if (!alert.isTest) {
         tryPlaySound(alert.soundFile);
