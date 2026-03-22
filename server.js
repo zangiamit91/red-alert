@@ -59,7 +59,7 @@ const HISTORY_PATH = process.env.HISTORY_PATH
   ? path.resolve(process.env.HISTORY_PATH)
   : path.join(__dirname, "history.json");
 
-const DEFAULT_SOUND = "315618__modularsamples__yamaha-cs-30l-whoopie-bass-c5-whoopie-bass-72-127.aiff";
+const DEFAULT_SOUND = "pantera.mp3";
 const DEFAULT_SETTINGS = Object.freeze({
   trackedAreas: [],
   areaSoundMap: {},
